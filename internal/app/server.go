@@ -26,7 +26,7 @@ func ConvertURLToShort(url string) string {
 	return sb.String()
 }
 
-func ConvertShortURLToId(shortURL string) int {
+func ConvertShortURLToID(shortURL string) int {
 	id := 0
 	var charToIndex = make(map[int32]int)
 	for index, val := range AllPossibleChars {
@@ -40,7 +40,7 @@ func ConvertShortURLToId(shortURL string) int {
 
 func GetURLByIDHandler(w http.ResponseWriter, r *http.Request) {
 	shortURL := r.URL.Path[1:]
-	id := ConvertShortURLToId(shortURL)
+	id := ConvertShortURLToID(shortURL)
 	url, ok := URLMap[id]
 	if !ok {
 		http.Error(w, "Couldn't find url for id "+shortURL, 400)
