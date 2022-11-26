@@ -1,6 +1,7 @@
 module github.com/tank4gun/gourlshortener
 
 go 1.19
+<<<<<<< HEAD
 
 require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
@@ -14,3 +15,5 @@ require (
 	golang.org/x/tools v0.1.12 // indirect
 	honnef.co/go/tools v0.3.3 // indirect
 )
+=======
+>>>>>>> 7b3ebfeb4d6b573a28e6abc87126dd459a848e85
