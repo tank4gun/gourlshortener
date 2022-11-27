@@ -15,7 +15,7 @@ type Storage struct {
 func (strg *Storage) InsertValue(value string) error {
 	_, ok := strg.InternalStorage[strg.NextIndex]
 	if ok {
-		return errors.New("Got same key already in storage")
+		return errors.New("got same key already in storage")
 	}
 	strg.InternalStorage[strg.NextIndex] = value
 	strg.NextIndex++
@@ -25,7 +25,7 @@ func (strg *Storage) InsertValue(value string) error {
 func (strg *Storage) GetValueByKey(key uint) (string, error) {
 	_, ok := strg.InternalStorage[key]
 	if !ok {
-		return "", errors.New("Got key not presented in storage")
+		return "", errors.New("got key not presented in storage")
 	}
 	return strg.InternalStorage[key], nil
 }

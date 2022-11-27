@@ -27,7 +27,7 @@ func TestGetURLByIDHandler(t *testing.T) {
 				307,
 				"http://ya.ru",
 			},
-			currentStorage: storage.Storage{map[uint]string{1: "http://ya.ru"}, 2},
+			currentStorage: storage.Storage{InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2},
 			url:            "/b",
 		},
 		{
@@ -36,7 +36,7 @@ func TestGetURLByIDHandler(t *testing.T) {
 				400,
 				"",
 			},
-			currentStorage: storage.Storage{map[uint]string{2: "http://ya.ru"}, 3},
+			currentStorage: storage.Storage{InternalStorage: map[uint]string{2: "http://ya.ru"}, NextIndex: 3},
 			url:            "/b",
 		},
 	}
@@ -47,6 +47,7 @@ func TestGetURLByIDHandler(t *testing.T) {
 			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.currentStorage).GetURLByIDHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
+			defer result.Body.Close()
 			assert.Equal(t, tt.want.code, result.StatusCode)
 			value := result.Header.Get("Location")
 			assert.Equal(t, tt.want.headerContent, value)
@@ -72,8 +73,8 @@ func TestCreateShortURLHandler(t *testing.T) {
 				201,
 				"http://localhost:8080/b",
 			},
-			previousStorage: storage.Storage{map[uint]string{}, 1},
-			resultStorage:   storage.Storage{map[uint]string{1: "http://ya.ru"}, 2},
+			previousStorage: storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			resultStorage:   storage.Storage{InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2},
 			url:             "http://ya.ru",
 		},
 	}
@@ -129,7 +130,7 @@ func TestCreateShortURL(t *testing.T) {
 	tests := []struct {
 		name             string
 		index            uint
-		expectedShortUrl string
+		expectedShortURL string
 	}{
 		{
 			"1_to_b",
@@ -150,7 +151,7 @@ func TestCreateShortURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := CreateShortURL(tt.index)
-			assert.Equal(t, tt.expectedShortUrl, result)
+			assert.Equal(t, tt.expectedShortURL, result)
 		})
 	}
 }

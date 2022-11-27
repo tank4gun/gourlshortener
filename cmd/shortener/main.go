@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	log.Fatal(server.CreateServer(&storage.Storage{map[uint]string{}, uint(1)}).ListenAndServe())
+	log.Fatal(server.CreateServer(&storage.Storage{InternalStorage: map[uint]string{}, NextIndex: uint(1)}).ListenAndServe())
 }
