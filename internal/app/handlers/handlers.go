@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/go-chi/chi/v5"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"io"
 	"math"
@@ -43,7 +44,7 @@ func ConvertShortURLToID(shortURL string) uint {
 }
 
 func (strg *HandlerWithStorage) GetURLByIDHandler(w http.ResponseWriter, r *http.Request) {
-	shortURL := r.URL.Path[1:]
+	shortURL := chi.URLParam(r, "id")
 	id := ConvertShortURLToID(shortURL)
 	url, ok := strg.storage.InternalStorage[id]
 	if !ok {

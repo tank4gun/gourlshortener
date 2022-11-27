@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"bytes"
+	"context"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"io"
@@ -43,6 +45,9 @@ func TestGetURLByIDHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tt.url[1:])
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 			w := httptest.NewRecorder()
 			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.currentStorage).GetURLByIDHandler)
 			handler.ServeHTTP(w, request)
