@@ -1,17 +1,11 @@
 package main
 
 import (
-	"github.com/tank4gun/gourlshortener/internal/app"
+	"github.com/tank4gun/gourlshortener/internal/app/server"
+	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"log"
-	"net/http"
 )
 
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.URLHandler)
-	server := &http.Server{
-		Addr:    "localhost:8080",
-		Handler: mux,
-	}
-	log.Fatal(server.ListenAndServe())
+	log.Fatal(server.CreateServer(&storage.Storage{map[uint]string{}, uint(1)}).ListenAndServe())
 }
