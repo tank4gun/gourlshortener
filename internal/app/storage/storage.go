@@ -5,11 +5,16 @@ import "errors"
 type Repository interface {
 	InsertValue(value string) error
 	GetValueByKey(key uint) (string, error)
+	GetNextIndex() (uint, error)
 }
 
 type Storage struct {
 	InternalStorage map[uint]string
 	NextIndex       uint
+}
+
+func (strg *Storage) GetNextIndex() (uint, error) {
+	return strg.NextIndex, nil
 }
 
 func (strg *Storage) InsertValue(value string) error {

@@ -46,8 +46,8 @@ func ConvertShortURLToID(shortURL string) uint {
 func (strg *HandlerWithStorage) GetURLByIDHandler(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 	id := ConvertShortURLToID(shortURL)
-	url, ok := strg.storage.InternalStorage[id]
-	if !ok {
+	url, err := strg.storage.GetValueByKey(id)
+	if err != nil {
 		http.Error(w, "Couldn't find url for id "+shortURL, 400)
 		return
 	}
@@ -64,25 +64,20 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 		http.Error(w, "Got bad body content", 400)
 		return
 	}
-	currInd := strg.storage.NextIndex
-	strg.storage.NextIndex++
-	strg.storage.InternalStorage[currInd] = string(url)
+	currInd, indErr := strg.storage.GetNextIndex()
+	if indErr != nil {
+		http.Error(w, "Bad next index", 500)
+		return
+	}
+	strgErr := strg.storage.InsertValue(string(url))
+	if strgErr != nil {
+		http.Error(w, "Couldn't insert new value into storage", 500)
+		return
+	}
 	shortURL := CreateShortURL(currInd)
 	w.WriteHeader(201)
 	_, errWrite := w.Write([]byte("http://localhost:8080/" + shortURL))
 	if errWrite != nil {
 		http.Error(w, "Bad code", 400)
-	}
-}
-
-func (strg *HandlerWithStorage) URLHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		strg.GetURLByIDHandler(w, r)
-	case http.MethodPost:
-		strg.CreateShortURLHandler(w, r)
-	default:
-		http.Error(w, "Couldn't process request", 400)
-		return
 	}
 }
