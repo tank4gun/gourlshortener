@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -14,6 +15,7 @@ var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 
 type HandlerWithStorage struct {
 	storage *storage.Storage
+	baseURL string
 }
 
 type URLBodyRequest struct {
@@ -25,7 +27,11 @@ type ShortenURLResponse struct {
 }
 
 func NewHandlerWithStorage(storageVal *storage.Storage) *HandlerWithStorage {
-	return &HandlerWithStorage{storage: storageVal}
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080/"
+	}
+	return &HandlerWithStorage{storage: storageVal, baseURL: baseURL}
 }
 
 func CreateShortURL(currInd uint) string {
@@ -92,7 +98,7 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 		return
 	}
 	w.WriteHeader(201)
-	_, errWrite := w.Write([]byte("http://localhost:8080/" + shortURL))
+	_, errWrite := w.Write([]byte(strg.baseURL + shortURL))
 	if errWrite != nil {
 		http.Error(w, "Bad code", 500)
 	}
@@ -120,7 +126,7 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 		http.Error(w, errorMessage, errorCode)
 		return
 	}
-	resultResponse := ShortenURLResponse{"http://localhost:8080/" + shortURL}
+	resultResponse := ShortenURLResponse{strg.baseURL + shortURL}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
 	if responseMarshalled, err := json.Marshal(resultResponse); err == nil {
