@@ -12,6 +12,7 @@ func CreateServer(startStorage *storage.Storage) *http.Server {
 	handlerWithStorage := handlers.NewHandlerWithStorage(startStorage)
 	router.Post("/", handlerWithStorage.CreateShortURLHandler)
 	router.Get("/{id}", handlerWithStorage.GetURLByIDHandler)
+	router.Post("/api/shorten", handlerWithStorage.CreateShortenUrlFromBodyHandler)
 	server := &http.Server{
 		Addr:    "localhost:8080",
 		Handler: router,

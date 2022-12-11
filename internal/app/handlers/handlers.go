@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"io"
@@ -13,6 +14,14 @@ var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 
 type HandlerWithStorage struct {
 	storage *storage.Storage
+}
+
+type URLBodyRequest struct {
+	URL string `json:"url"`
+}
+
+type ShortenURLResponse struct {
+	URL string `json:"result"`
 }
 
 func NewHandlerWithStorage(storageVal *storage.Storage) *HandlerWithStorage {
@@ -43,6 +52,19 @@ func ConvertShortURLToID(shortURL string) uint {
 	return id
 }
 
+func (strg *HandlerWithStorage) CreateShortUrlByUrl(url string) (shortURLResult string, errMsg string, errCode int) {
+	currInd, indErr := strg.storage.GetNextIndex()
+	if indErr != nil {
+		return "", "Bad next index", 500
+	}
+	strgErr := strg.storage.InsertValue(url)
+	if strgErr != nil {
+		return "", "Couldn't insert new value into storage", 500
+	}
+	shortURL := CreateShortURL(currInd)
+	return shortURL, "", 0
+}
+
 func (strg *HandlerWithStorage) GetURLByIDHandler(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 	id := ConvertShortURLToID(shortURL)
@@ -64,20 +86,51 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 		http.Error(w, "Got bad body content", 400)
 		return
 	}
-	currInd, indErr := strg.storage.GetNextIndex()
-	if indErr != nil {
-		http.Error(w, "Bad next index", 500)
+	shortURL, errorMessage, errorCode := strg.CreateShortUrlByUrl(string(url))
+	if errorCode != 0 {
+		http.Error(w, errorMessage, errorCode)
 		return
 	}
-	strgErr := strg.storage.InsertValue(string(url))
-	if strgErr != nil {
-		http.Error(w, "Couldn't insert new value into storage", 500)
-		return
-	}
-	shortURL := CreateShortURL(currInd)
 	w.WriteHeader(201)
 	_, errWrite := w.Write([]byte("http://localhost:8080/" + shortURL))
 	if errWrite != nil {
-		http.Error(w, "Bad code", 400)
+		http.Error(w, "Bad code", 500)
+	}
+}
+
+func (strg *HandlerWithStorage) CreateShortenUrlFromBodyHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	jsonBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	var requestURL URLBodyRequest
+	err = json.Unmarshal(jsonBody, &requestURL)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if requestURL.URL == "" {
+		http.Error(w, "Got empty url in Body", 422)
+		return
+	}
+	shortURL, errorMessage, errorCode := strg.CreateShortUrlByUrl(requestURL.URL)
+	if errorCode != 0 {
+		http.Error(w, errorMessage, errorCode)
+		return
+	}
+	resultResponse := ShortenURLResponse{"http://localhost:8080/" + shortURL}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	if responseMarshalled, err := json.Marshal(resultResponse); err == nil {
+		_, err = w.Write(responseMarshalled)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	} else {
+		http.Error(w, err.Error(), 500)
+		return
 	}
 }

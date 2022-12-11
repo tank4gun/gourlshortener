@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
@@ -12,30 +13,34 @@ import (
 	"testing"
 )
 
+type wantResponse struct {
+	code            int
+	headerContent   string
+	responseContent string
+}
+
 func TestGetURLByIDHandler(t *testing.T) {
-	type want struct {
-		code          int
-		headerContent string
-	}
 	tests := []struct {
 		name           string
-		want           want
+		want           wantResponse
 		currentStorage storage.Storage
 		url            string
 	}{
 		{
 			name: "short_url_exists",
-			want: want{
+			want: wantResponse{
 				307,
 				"http://ya.ru",
+				"",
 			},
 			currentStorage: storage.Storage{InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2},
 			url:            "/b",
 		},
 		{
 			name: "short_url_does_not_exists",
-			want: want{
+			want: wantResponse{
 				400,
+				"",
 				"",
 			},
 			currentStorage: storage.Storage{InternalStorage: map[uint]string{2: "http://ya.ru"}, NextIndex: 3},
@@ -61,21 +66,18 @@ func TestGetURLByIDHandler(t *testing.T) {
 }
 
 func TestCreateShortURLHandler(t *testing.T) {
-	type want struct {
-		code            int
-		responseContent string
-	}
 	tests := []struct {
 		name            string
-		want            want
+		want            wantResponse
 		previousStorage storage.Storage
 		resultStorage   storage.Storage
 		url             string
 	}{
 		{
 			name: "url_creation_success",
-			want: want{
+			want: wantResponse{
 				201,
+				"",
 				"http://localhost:8080/b",
 			},
 			previousStorage: storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
@@ -157,6 +159,72 @@ func TestCreateShortURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := CreateShortURL(tt.index)
 			assert.Equal(t, tt.expectedShortURL, result)
+		})
+	}
+}
+
+func TestCreateShortenUrlFromBodyHandler(t *testing.T) {
+	tests := []struct {
+		name            string
+		want            wantResponse
+		previousStorage storage.Storage
+		resultStorage   storage.Storage
+		requestBody     string
+	}{
+		{
+			"bad_request_body",
+			wantResponse{
+				400,
+				"text/plain; charset=utf-8",
+				"",
+			},
+			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			"some_bad_input",
+		},
+		{
+			"unprocessable_request_body",
+			wantResponse{
+				422,
+				"text/plain; charset=utf-8",
+				"",
+			},
+			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			`{"ur1": "some_bad_input"}`,
+		},
+		{
+			"success_case",
+			wantResponse{
+				201,
+				"application/json",
+				`{"result":"http://localhost:8080/b"}`,
+			},
+			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			storage.Storage{InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2},
+			`{"url": "http://ya.ru"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(
+				http.MethodPost, "/api/shorten", bytes.NewReader([]byte(tt.requestBody)))
+			w := httptest.NewRecorder()
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortenUrlFromBodyHandler)
+			handler.ServeHTTP(w, request)
+			result := w.Result()
+			assert.Equal(t, tt.want.code, result.StatusCode)
+			assert.Equal(t, tt.want.headerContent, result.Header.Get("Content-Type"))
+			if tt.want.code != 201 {
+				return
+			}
+			defer result.Body.Close()
+			responseBody, err := io.ReadAll(result.Body)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.want.responseContent, string(responseBody))
+			var responseObj ShortenURLResponse
+			err = json.Unmarshal(responseBody, &responseObj)
+			assert.Nil(t, err)
 		})
 	}
 }
