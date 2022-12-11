@@ -163,7 +163,7 @@ func TestCreateShortURL(t *testing.T) {
 	}
 }
 
-func TestCreateShortenUrlFromBodyHandler(t *testing.T) {
+func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 	tests := []struct {
 		name            string
 		want            wantResponse
@@ -210,7 +210,7 @@ func TestCreateShortenUrlFromBodyHandler(t *testing.T) {
 			request := httptest.NewRequest(
 				http.MethodPost, "/api/shorten", bytes.NewReader([]byte(tt.requestBody)))
 			w := httptest.NewRecorder()
-			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortenUrlFromBodyHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortenURLFromBodyHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			assert.Equal(t, tt.want.code, result.StatusCode)

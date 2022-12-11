@@ -52,7 +52,7 @@ func ConvertShortURLToID(shortURL string) uint {
 	return id
 }
 
-func (strg *HandlerWithStorage) CreateShortUrlByUrl(url string) (shortURLResult string, errMsg string, errCode int) {
+func (strg *HandlerWithStorage) CreateShortURLByURL(url string) (shortURLResult string, errMsg string, errCode int) {
 	currInd, indErr := strg.storage.GetNextIndex()
 	if indErr != nil {
 		return "", "Bad next index", 500
@@ -86,7 +86,7 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 		http.Error(w, "Got bad body content", 400)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortUrlByUrl(string(url))
+	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(string(url))
 	if errorCode != 0 {
 		http.Error(w, errorMessage, errorCode)
 		return
@@ -98,7 +98,7 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 	}
 }
 
-func (strg *HandlerWithStorage) CreateShortenUrlFromBodyHandler(w http.ResponseWriter, r *http.Request) {
+func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	jsonBody, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -112,10 +112,10 @@ func (strg *HandlerWithStorage) CreateShortenUrlFromBodyHandler(w http.ResponseW
 		return
 	}
 	if requestURL.URL == "" {
-		http.Error(w, "Got empty url in Body", 422)
+		http.Error(w, "Got empty url in Body", http.StatusUnprocessableEntity)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortUrlByUrl(requestURL.URL)
+	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(requestURL.URL)
 	if errorCode != 0 {
 		http.Error(w, errorMessage, errorCode)
 		return
