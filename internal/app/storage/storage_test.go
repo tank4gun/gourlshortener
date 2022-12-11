@@ -1,0 +1,92 @@
+package storage
+
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+func TestStorage_GetValueByKey(t *testing.T) {
+	tests := []struct {
+		name          string
+		startStorage  Storage
+		key           uint
+		expectedValue string
+	}{
+		{
+			"one_value",
+			Storage{InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2},
+			1,
+			"aaa",
+		},
+		{
+			"two_values",
+			Storage{InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, NextIndex: 3},
+			2,
+			"bbb",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resultValue, err := tt.startStorage.GetValueByKey(tt.key)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expectedValue, resultValue)
+		})
+	}
+}
+
+func TestStorage_InsertValue(t *testing.T) {
+	tests := []struct {
+		name            string
+		startStorage    Storage
+		value           string
+		expectedStorage Storage
+	}{
+		{
+			"empty_storage",
+			Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			"aaa",
+			Storage{InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2},
+		},
+		{
+			"one_value",
+			Storage{InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2},
+			"bbb",
+			Storage{InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, NextIndex: 3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.startStorage.InsertValue(tt.value)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expectedStorage, tt.startStorage)
+		})
+	}
+}
+
+func TestStorage_GetNextIndex(t *testing.T) {
+	tests := []struct {
+		name            string
+		storage         Storage
+		expectedNextInd uint
+	}{
+		{
+			"init_next_index",
+			Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			1,
+		},
+		{
+			"10th_next_index",
+			Storage{InternalStorage: map[uint]string{
+				1: "a", 2: "b", 3: "c", 4: "aa", 5: "r", 6: "1", 7: "qwe", 8: "d", 9: "tt",
+			}, NextIndex: 10},
+			10,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resultNextIndex, err := tt.storage.GetNextIndex()
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expectedNextInd, resultNextIndex)
+		})
+	}
+}
