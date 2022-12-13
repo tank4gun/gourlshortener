@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -80,13 +81,19 @@ func TestCreateShortURLHandler(t *testing.T) {
 				"",
 				"http://localhost:8080/b",
 			},
-			previousStorage: storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
-			resultStorage:   storage.Storage{InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2},
-			url:             "http://ya.ru",
+			previousStorage: storage.Storage{
+				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
+			resultStorage: storage.Storage{
+				InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
+			url: "http://ya.ru",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			os.Setenv("SERVER_ADDRESS", "http://localhost:8080")
+			os.Setenv("BASE_URL", "http://localhost:8080")
 			request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(tt.url)))
 			w := httptest.NewRecorder()
 			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortURLHandler)
@@ -178,8 +185,12 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 				"text/plain; charset=utf-8",
 				"",
 			},
-			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
-			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			storage.Storage{
+				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
+			storage.Storage{
+				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
 			"some_bad_input",
 		},
 		{
@@ -189,8 +200,12 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 				"text/plain; charset=utf-8",
 				"",
 			},
-			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
-			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			storage.Storage{
+				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
+			storage.Storage{
+				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
 			`{"ur1": "some_bad_input"}`,
 		},
 		{
@@ -200,8 +215,12 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 				"application/json",
 				`{"result":"http://localhost:8080/b"}`,
 			},
-			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
-			storage.Storage{InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2},
+			storage.Storage{
+				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
+			storage.Storage{
+				InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
 			`{"url": "http://ya.ru"}`,
 		},
 	}

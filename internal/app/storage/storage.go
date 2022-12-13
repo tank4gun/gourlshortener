@@ -50,7 +50,7 @@ func NewStorage(internalStorage map[uint]string, nextInd uint, filename string) 
 				return &Storage{internalStorage, nextInd, encoder, decoder}, nil
 			}
 			internalStorage[mapItem.Key] = mapItem.Value
-			nextInd = Max(nextInd, mapItem.Key)
+			nextInd = Max(nextInd, mapItem.Key) + 1
 		}
 	}
 }
@@ -65,9 +65,11 @@ func (strg *Storage) InsertValue(value string) error {
 		return errors.New("got same key already in storage")
 	}
 	strg.InternalStorage[strg.NextIndex] = value
-	mapItem := MapItem{Key: strg.NextIndex, Value: value}
-	if err := strg.Encoder.Encode(mapItem); err != nil {
-		return err
+	if strg.Encoder != nil {
+		mapItem := MapItem{Key: strg.NextIndex, Value: value}
+		if err := strg.Encoder.Encode(mapItem); err != nil {
+			return err
+		}
 	}
 	strg.NextIndex++
 	return nil

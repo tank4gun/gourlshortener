@@ -14,13 +14,17 @@ func TestStorage_GetValueByKey(t *testing.T) {
 	}{
 		{
 			"one_value",
-			Storage{InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2},
+			Storage{
+				InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
 			1,
 			"aaa",
 		},
 		{
 			"two_values",
-			Storage{InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, NextIndex: 3},
+			Storage{
+				InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, NextIndex: 3, Encoder: nil, Decoder: nil,
+			},
 			2,
 			"bbb",
 		},
@@ -43,15 +47,23 @@ func TestStorage_InsertValue(t *testing.T) {
 	}{
 		{
 			"empty_storage",
-			Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			Storage{
+				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
 			"aaa",
-			Storage{InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2},
+			Storage{
+				InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
 		},
 		{
 			"one_value",
-			Storage{InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2},
+			Storage{
+				InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
 			"bbb",
-			Storage{InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, NextIndex: 3},
+			Storage{
+				InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, NextIndex: 3, Encoder: nil, Decoder: nil,
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -71,14 +83,19 @@ func TestStorage_GetNextIndex(t *testing.T) {
 	}{
 		{
 			"init_next_index",
-			Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			Storage{
+				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
 			1,
 		},
 		{
 			"10th_next_index",
-			Storage{InternalStorage: map[uint]string{
-				1: "a", 2: "b", 3: "c", 4: "aa", 5: "r", 6: "1", 7: "qwe", 8: "d", 9: "tt",
-			}, NextIndex: 10},
+			Storage{
+				InternalStorage: map[uint]string{
+					1: "a", 2: "b", 3: "c", 4: "aa", 5: "r", 6: "1", 7: "qwe", 8: "d", 9: "tt",
+				},
+				NextIndex: 10, Encoder: nil, Decoder: nil,
+			},
 			10,
 		},
 	}
@@ -87,6 +104,40 @@ func TestStorage_GetNextIndex(t *testing.T) {
 			resultNextIndex, err := tt.storage.GetNextIndex()
 			assert.Nil(t, err)
 			assert.Equal(t, tt.expectedNextInd, resultNextIndex)
+		})
+	}
+}
+
+func TestMax(t *testing.T) {
+	tests := []struct {
+		name   string
+		x      uint
+		y      uint
+		result uint
+	}{
+		{
+			"left_bigger",
+			10,
+			5,
+			10,
+		},
+		{
+			"right_bigger",
+			10,
+			15,
+			15,
+		},
+		{
+			"equal",
+			10,
+			10,
+			10,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			maxResult := Max(tt.x, tt.y)
+			assert.Equal(t, tt.result, maxResult)
 		})
 	}
 }
