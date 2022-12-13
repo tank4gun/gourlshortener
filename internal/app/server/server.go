@@ -16,7 +16,7 @@ func CreateServer(startStorage *storage.Storage) *http.Server {
 	router.Post("/api/shorten", handlerWithStorage.CreateShortenURLFromBodyHandler)
 	serverAddrEnv := os.Getenv("SERVER_ADDRESS")
 	if serverAddrEnv == "" {
-		serverAddrEnv = "http://localhost:8080"
+		serverAddrEnv = "localhost:8080"
 	}
 	server := &http.Server{
 		Addr:    serverAddrEnv,
