@@ -47,10 +47,10 @@ func NewStorage(internalStorage map[uint]string, nextInd uint, filename string) 
 			var mapItem MapItem
 			err := decoder.Decode(&mapItem)
 			if err != nil {
-				return &Storage{internalStorage, nextInd, encoder, decoder}, nil
+				return &Storage{internalStorage, nextInd + 1, encoder, decoder}, nil
 			}
 			internalStorage[mapItem.Key] = mapItem.Value
-			nextInd = Max(nextInd, mapItem.Key) + 1
+			nextInd = Max(nextInd, mapItem.Key)
 		}
 	}
 }
