@@ -31,7 +31,7 @@ func NewHandlerWithStorage(storageVal *storage.Storage) *HandlerWithStorage {
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
 		if BaseURL == "" {
-			baseURL = "localhost:8080"
+			baseURL = "http://localhost:8080"
 		} else {
 			baseURL = BaseURL
 		}
