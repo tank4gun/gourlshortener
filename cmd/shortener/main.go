@@ -13,8 +13,8 @@ var FileStoragePath string
 
 func init() {
 	flag.StringVar(&server.ServerAddress, "a", "localhost:8080", "Server address")
-	flag.StringVar(&handlers.BaseURL, "b", "", "Base URL for shorten URLs")
-	flag.StringVar(&FileStoragePath, "f", "", "File path for storage")
+	flag.StringVar(&handlers.BaseURL, "b", "http://localhost:8080", "Base URL for shorten URLs")
+	flag.StringVar(&FileStoragePath, "f", "storage.txt", "File path for storage")
 }
 
 func main() {
