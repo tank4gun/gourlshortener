@@ -12,6 +12,7 @@ import (
 )
 
 var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+var BaseURL string
 
 type HandlerWithStorage struct {
 	storage *storage.Storage
@@ -29,10 +30,13 @@ type ShortenURLResponse struct {
 func NewHandlerWithStorage(storageVal *storage.Storage) *HandlerWithStorage {
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:8080/"
-	} else {
-		baseURL += "/"
+		if BaseURL == "" {
+			baseURL = "http://localhost:8080"
+		} else {
+			baseURL = BaseURL
+		}
 	}
+	baseURL += "/"
 	return &HandlerWithStorage{storage: storageVal, baseURL: baseURL}
 }
 
