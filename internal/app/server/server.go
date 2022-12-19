@@ -13,7 +13,7 @@ import (
 
 var ServerAddress string
 
-func RecieveCompressed(next http.Handler) http.Handler {
+func ReceiveCompressed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			next.ServeHTTP(w, r)
@@ -56,7 +56,7 @@ func SendCompressed(next http.Handler) http.Handler {
 
 func CreateServer(startStorage *storage.Storage) *http.Server {
 	router := chi.NewRouter()
-	router.Use(RecieveCompressed)
+	router.Use(ReceiveCompressed)
 	router.Use(SendCompressed)
 	handlerWithStorage := handlers.NewHandlerWithStorage(startStorage)
 	router.Post("/", handlerWithStorage.CreateShortURLHandler)
