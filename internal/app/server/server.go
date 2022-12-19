@@ -61,6 +61,7 @@ func CreateServer(startStorage *storage.Storage) *http.Server {
 	router.Post("/", handlerWithStorage.CreateShortURLHandler)
 	router.Get("/{id}", handlerWithStorage.GetURLByIDHandler)
 	router.Post("/api/shorten", handlerWithStorage.CreateShortenURLFromBodyHandler)
+	router.Use(SendCompressed)
 	serverAddr := os.Getenv("SERVER_ADDRESS")
 	if serverAddr == "" {
 		if ServerAddress == "" {
