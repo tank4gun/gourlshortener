@@ -57,11 +57,11 @@ func SendCompressed(next http.Handler) http.Handler {
 func CreateServer(startStorage *storage.Storage) *http.Server {
 	router := chi.NewRouter()
 	router.Use(ReceiveCompressed)
+	router.Use(SendCompressed)
 	handlerWithStorage := handlers.NewHandlerWithStorage(startStorage)
 	router.Post("/", handlerWithStorage.CreateShortURLHandler)
 	router.Get("/{id}", handlerWithStorage.GetURLByIDHandler)
 	router.Post("/api/shorten", handlerWithStorage.CreateShortenURLFromBodyHandler)
-	router.Use(SendCompressed)
 	serverAddr := os.Getenv("SERVER_ADDRESS")
 	if serverAddr == "" {
 		if ServerAddress == "" {
