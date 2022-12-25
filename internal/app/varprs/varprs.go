@@ -1,4 +1,4 @@
-package variables_parsing
+package varprs
 
 import (
 	"flag"

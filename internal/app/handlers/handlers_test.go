@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
-	"github.com/tank4gun/gourlshortener/internal/app/variables_parsing"
+	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -95,7 +95,7 @@ func TestCreateShortURLHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			os.Setenv("SERVER_ADDRESS", "http://localhost:8080")
 			os.Setenv("BASE_URL", "http://localhost:8080")
-			variables_parsing.Init()
+			varprs.Init()
 			request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(tt.url)))
 			w := httptest.NewRecorder()
 			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortURLHandler)
