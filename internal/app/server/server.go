@@ -5,12 +5,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/variables_parsing"
 	"io"
 	"net/http"
 	"strings"
 )
-
-var ServerAddress string
 
 func ReceiveCompressed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +62,7 @@ func CreateServer(startStorage *storage.Storage) *http.Server {
 	router.Post("/api/shorten", handlerWithStorage.CreateShortenURLFromBodyHandler)
 
 	server := &http.Server{
-		Addr:    ServerAddress,
+		Addr:    variables_parsing.ServerAddress,
 		Handler: router,
 	}
 	return server

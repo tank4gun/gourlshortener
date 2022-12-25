@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/variables_parsing"
 	"io"
 	"math"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 )
 
 var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-var BaseURL string
 
 type HandlerWithStorage struct {
 	storage *storage.Storage
@@ -27,7 +27,7 @@ type ShortenURLResponse struct {
 }
 
 func NewHandlerWithStorage(storageVal *storage.Storage) *HandlerWithStorage {
-	return &HandlerWithStorage{storage: storageVal, baseURL: BaseURL}
+	return &HandlerWithStorage{storage: storageVal, baseURL: variables_parsing.BaseURL}
 }
 
 func CreateShortURL(currInd uint) string {
