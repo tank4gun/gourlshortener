@@ -11,21 +11,42 @@ import (
 
 var FileStoragePath string
 
-func init() {
+func Init() {
 	flag.StringVar(&server.ServerAddress, "a", "localhost:8080", "Server address")
 	flag.StringVar(&handlers.BaseURL, "b", "http://localhost:8080", "Base URL for shorten URLs")
 	flag.StringVar(&FileStoragePath, "f", "storage.txt", "File path for storage")
+	flag.Parse()
+
+	fileStoragePathEnv := os.Getenv("FILE_STORAGE_PATH")
+	if fileStoragePathEnv != "" {
+		FileStoragePath = fileStoragePathEnv
+	}
+
+	baseURLEnv := os.Getenv("BASE_URL")
+	if baseURLEnv != "" {
+		handlers.BaseURL = baseURLEnv
+	} else {
+		if handlers.BaseURL == "" {
+			handlers.BaseURL = "http://localhost:8080"
+		}
+	}
+	handlers.BaseURL += "/"
+
+	serverAddrEnv := os.Getenv("SERVER_ADDRESS")
+	if serverAddrEnv != "" {
+		server.ServerAddress = serverAddrEnv
+	} else {
+		if server.ServerAddress == "" {
+			server.ServerAddress = "localhost:8080"
+		}
+	}
 }
 
 func main() {
-	flag.Parse()
+	Init()
 	internalStorage := map[uint]string{}
 	nextIndex := uint(1)
-	fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
-	if fileStoragePath == "" {
-		fileStoragePath = FileStoragePath
-	}
-	strg, _ := storage.NewStorage(internalStorage, nextIndex, fileStoragePath)
+	strg, _ := storage.NewStorage(internalStorage, nextIndex, FileStoragePath)
 	currentServer := server.CreateServer(strg)
 	log.Fatal(currentServer.ListenAndServe())
 }

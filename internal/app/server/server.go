@@ -7,7 +7,6 @@ import (
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -62,16 +61,9 @@ func CreateServer(startStorage *storage.Storage) *http.Server {
 	router.Post("/", handlerWithStorage.CreateShortURLHandler)
 	router.Get("/{id}", handlerWithStorage.GetURLByIDHandler)
 	router.Post("/api/shorten", handlerWithStorage.CreateShortenURLFromBodyHandler)
-	serverAddr := os.Getenv("SERVER_ADDRESS")
-	if serverAddr == "" {
-		if ServerAddress == "" {
-			serverAddr = "localhost:8080"
-		} else {
-			serverAddr = ServerAddress
-		}
-	}
+
 	server := &http.Server{
-		Addr:    serverAddr,
+		Addr:    ServerAddress,
 		Handler: router,
 	}
 	return server
