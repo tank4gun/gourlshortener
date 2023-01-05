@@ -35,7 +35,7 @@ func TestGetURLByIDHandler(t *testing.T) {
 				"http://ya.ru",
 				"",
 			},
-			currentStorage: storage.Storage{InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2},
+			currentStorage: storage.Storage{InternalStorage: map[uint]string{1: "http://ya.ru"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2},
 			url:            "/b",
 		},
 		{
@@ -55,6 +55,15 @@ func TestGetURLByIDHandler(t *testing.T) {
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("id", tt.url[1:])
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			//h := hmac.New(sha256.New, CookieKey)
+			//userID := []byte(strconv.Itoa(1))
+			//h.Write(userID)
+			//sign := h.Sum(nil)
+			//newCookie := http.Cookie{Name: URLShortenderCookieName, Value: hex.EncodeToString(append(userID[:], sign[:]...))}
+			//request.Context(&newCookie)
+			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			request = request.WithContext(ctx)
+			//next.ServeHTTP(w, r.WithContext(ctx))
 			w := httptest.NewRecorder()
 			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.currentStorage).GetURLByIDHandler)
 			handler.ServeHTTP(w, request)
@@ -83,10 +92,10 @@ func TestCreateShortURLHandler(t *testing.T) {
 				"http://localhost:8080/b",
 			},
 			previousStorage: storage.Storage{
-				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			resultStorage: storage.Storage{
-				InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{1: "http://ya.ru"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			url: "http://ya.ru",
 		},
@@ -98,6 +107,8 @@ func TestCreateShortURLHandler(t *testing.T) {
 			varprs.Init()
 			request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(tt.url)))
 			w := httptest.NewRecorder()
+			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			request = request.WithContext(ctx)
 			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortURLHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
@@ -188,10 +199,10 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 				"",
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			"some_bad_input",
 		},
@@ -203,10 +214,10 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 				"",
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			`{"ur1": "some_bad_input"}`,
 		},
@@ -218,10 +229,10 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 				`{"result":"http://localhost:8080/b"}`,
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{1: "http://ya.ru"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{1: "http://ya.ru"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			`{"url": "http://ya.ru"}`,
 		},
@@ -231,6 +242,8 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 			request := httptest.NewRequest(
 				http.MethodPost, "/api/shorten", bytes.NewReader([]byte(tt.requestBody)))
 			w := httptest.NewRecorder()
+			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			request = request.WithContext(ctx)
 			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortenURLFromBodyHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()

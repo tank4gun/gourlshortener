@@ -12,6 +12,9 @@ import (
 )
 
 var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+var UserIDCtxName = "UserID"
+var CookieKey = []byte("URL-Shortener-Key")
+var URLShortenderCookieName = "URL-Shortener"
 
 type HandlerWithStorage struct {
 	storage *storage.Storage
@@ -24,6 +27,11 @@ type URLBodyRequest struct {
 
 type ShortenURLResponse struct {
 	URL string `json:"result"`
+}
+
+type FullInfoURLResponse struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 func NewHandlerWithStorage(storageVal *storage.Storage) *HandlerWithStorage {
@@ -54,12 +62,12 @@ func ConvertShortURLToID(shortURL string) uint {
 	return id
 }
 
-func (strg *HandlerWithStorage) CreateShortURLByURL(url string) (shortURLResult string, errMsg string, errCode int) {
+func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (shortURLResult string, errMsg string, errCode int) {
 	currInd, indErr := strg.storage.GetNextIndex()
 	if indErr != nil {
 		return "", "Bad next index", 500
 	}
-	strgErr := strg.storage.InsertValue(url)
+	strgErr := strg.storage.InsertValue(url, userID)
 	if strgErr != nil {
 		return "", "Couldn't insert new value into storage", 500
 	}
@@ -70,7 +78,7 @@ func (strg *HandlerWithStorage) CreateShortURLByURL(url string) (shortURLResult 
 func (strg *HandlerWithStorage) GetURLByIDHandler(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 	id := ConvertShortURLToID(shortURL)
-	url, err := strg.storage.GetValueByKey(id)
+	url, err := strg.storage.GetValueByKeyAndUserID(id, r.Context().Value(UserIDCtxName).(uint))
 	if err != nil {
 		http.Error(w, "Couldn't find url for id "+shortURL, 400)
 		return
@@ -88,7 +96,7 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 		http.Error(w, "Got bad body content", 400)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(string(url))
+	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(string(url), r.Context().Value(UserIDCtxName).(uint))
 	if errorCode != 0 {
 		http.Error(w, errorMessage, errorCode)
 		return
@@ -117,7 +125,7 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 		http.Error(w, "Got empty url in Body", http.StatusUnprocessableEntity)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(requestURL.URL)
+	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(requestURL.URL, r.Context().Value(UserIDCtxName).(uint))
 	if errorCode != 0 {
 		http.Error(w, errorMessage, errorCode)
 		return
@@ -126,6 +134,38 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
 	if responseMarshalled, err := json.Marshal(resultResponse); err == nil {
+		_, err = w.Write(responseMarshalled)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	} else {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+}
+
+func (strg *HandlerWithStorage) GetAllURLs(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDCtxName).(uint)
+	userURLs, ok := strg.storage.UserIDToURLID[userID]
+	if !ok {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	responseList := make([]FullInfoURLResponse, 0)
+	for _, URLID := range userURLs {
+		shortURL := CreateShortURL(URLID)
+		shortURL = strg.baseURL + shortURL
+		originalURL, ok := strg.storage.InternalStorage[URLID]
+		if !ok {
+			http.Error(w, "Could not get URL from storage by ID", http.StatusInternalServerError)
+			return
+		}
+		responseList = append(responseList, FullInfoURLResponse{ShortURL: shortURL, OriginalURL: originalURL})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if responseMarshalled, err := json.Marshal(responseList); err == nil {
 		_, err = w.Write(responseMarshalled)
 		if err != nil {
 			http.Error(w, err.Error(), 500)

@@ -2,6 +2,13 @@ package server
 
 import (
 	"compress/gzip"
+	"context"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
@@ -10,6 +17,15 @@ import (
 	"net/http"
 	"strings"
 )
+
+func GenerateNewID() []byte {
+	newData := make([]byte, 4)
+	_, err := rand.Read(newData)
+	if err != nil {
+		panic(err.Error())
+	}
+	return newData
+}
 
 func ReceiveCompressed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -52,14 +68,47 @@ func SendCompressed(next http.Handler) http.Handler {
 	})
 }
 
+func CheckAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := (*r).Cookie(handlers.URLShortenderCookieName)
+		if cookie != nil && err != nil {
+			fmt.Println(err.Error())
+			io.WriteString(w, err.Error())
+			return
+		}
+		if cookie != nil {
+			cookieValue, _ := hex.DecodeString(cookie.Value)
+			h := hmac.New(sha256.New, handlers.CookieKey)
+			h.Write(cookieValue[:4])
+			sign := h.Sum(nil)
+			if hmac.Equal(sign, cookieValue[4:]) {
+				ctx := context.WithValue(r.Context(), handlers.UserIDCtxName, uint(binary.BigEndian.Uint32(cookieValue[:4])))
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+		}
+
+		newID := GenerateNewID()
+		h := hmac.New(sha256.New, handlers.CookieKey)
+		h.Write(newID)
+		sign := h.Sum(nil)
+		newCookie := http.Cookie{Name: handlers.URLShortenderCookieName, Value: hex.EncodeToString(append(newID[:], sign[:]...))}
+		http.SetCookie(w, &newCookie)
+		ctx := context.WithValue(r.Context(), handlers.UserIDCtxName, uint(binary.BigEndian.Uint32(newID)))
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func CreateServer(startStorage *storage.Storage) *http.Server {
 	router := chi.NewRouter()
 	router.Use(ReceiveCompressed)
 	router.Use(SendCompressed)
+	router.Use(CheckAuth)
 	handlerWithStorage := handlers.NewHandlerWithStorage(startStorage)
 	router.Post("/", handlerWithStorage.CreateShortURLHandler)
 	router.Get("/{id}", handlerWithStorage.GetURLByIDHandler)
 	router.Post("/api/shorten", handlerWithStorage.CreateShortenURLFromBodyHandler)
+	router.Get("/api/user/urls", handlerWithStorage.GetAllURLs)
 
 	server := &http.Server{
 		Addr:    varprs.ServerAddress,
