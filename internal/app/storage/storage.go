@@ -92,14 +92,14 @@ func Contains(list []uint, value uint) error {
 }
 
 func (strg *Storage) GetValueByKeyAndUserID(key uint, userID uint) (string, error) {
-	userURLs, ok := strg.UserIDToURLID[userID]
-	if !ok {
-		return "", errors.New("got userID not presented in storage")
-	}
-	if err := Contains(userURLs, key); err != nil {
-		return "", err
-	}
-	_, ok = strg.InternalStorage[key]
+	//userURLs, ok := strg.UserIDToURLID[userID]
+	//if !ok {
+	//	return "", errors.New("got userID not presented in storage")
+	//}
+	//if err := Contains(userURLs, key); err != nil {
+	//	return "", err
+	//}
+	_, ok := strg.InternalStorage[key]
 	if !ok {
 		return "", errors.New("got key not presented in storage")
 	}

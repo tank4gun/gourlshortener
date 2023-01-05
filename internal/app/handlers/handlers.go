@@ -11,8 +11,10 @@ import (
 	"strings"
 )
 
+type userCtxName string
+
 var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-var UserIDCtxName = "UserID"
+var UserIDCtxName = userCtxName("UserID")
 var CookieKey = []byte("URL-Shortener-Key")
 var URLShortenderCookieName = "URL-Shortener"
 
