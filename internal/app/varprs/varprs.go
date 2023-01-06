@@ -8,11 +8,13 @@ import (
 var FileStoragePath string
 var BaseURL string
 var ServerAddress string
+var DatabaseDSN string
 
 func Init() {
 	flag.StringVar(&ServerAddress, "a", "localhost:8080", "Server address")
 	flag.StringVar(&BaseURL, "b", "http://localhost:8080", "Base URL for shorten URLs")
 	flag.StringVar(&FileStoragePath, "f", "storage.txt", "File path for storage")
+	flag.StringVar(&DatabaseDSN, "d", "postgresql://postgres2:QQQQ@localhost:6432/url_shortener", "Database connection address")
 	flag.Parse()
 
 	fileStoragePathEnv := os.Getenv("FILE_STORAGE_PATH")
@@ -37,5 +39,10 @@ func Init() {
 		if ServerAddress == "" {
 			ServerAddress = "localhost:8080"
 		}
+	}
+
+	databaseDSNEnv := os.Getenv("DATABASE_DSN")
+	if databaseDSNEnv != "" {
+		DatabaseDSN = databaseDSNEnv
 	}
 }

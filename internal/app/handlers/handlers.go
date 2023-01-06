@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
@@ -20,6 +21,7 @@ var URLShortenderCookieName = "URL-Shortener"
 
 type HandlerWithStorage struct {
 	storage *storage.Storage
+	db      *sql.DB
 	baseURL string
 }
 
@@ -36,8 +38,8 @@ type FullInfoURLResponse struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func NewHandlerWithStorage(storageVal *storage.Storage) *HandlerWithStorage {
-	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL}
+func NewHandlerWithStorage(storageVal *storage.Storage, db *sql.DB) *HandlerWithStorage {
+	return &HandlerWithStorage{storage: storageVal, db: db, baseURL: varprs.BaseURL}
 }
 
 func CreateShortURL(currInd uint) string {
@@ -177,4 +179,15 @@ func (strg *HandlerWithStorage) GetAllURLs(w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), 500)
 		return
 	}
+}
+
+func (strg *HandlerWithStorage) Ping(w http.ResponseWriter, r *http.Request) {
+	err := strg.db.Ping()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	var empty []byte
+	w.Write(empty)
 }
