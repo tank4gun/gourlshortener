@@ -13,7 +13,7 @@ func main() {
 	internalStorage := map[uint]string{}
 	nextIndex := uint(1)
 	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath)
-	database, _ := db.CreateDb(varprs.DatabaseDSN)
+	database, _ := db.CreateDB(varprs.DatabaseDSN)
 	currentServer := server.CreateServer(strg, database)
 	log.Fatal(currentServer.ListenAndServe())
 }
