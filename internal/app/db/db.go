@@ -10,6 +10,6 @@ func CreateDB(dbDSN string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer database.Close()
+	//defer database.Close()
 	return database, nil
 }
