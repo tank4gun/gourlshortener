@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -16,7 +15,7 @@ func RunMigrations(dbDSN string) error {
 	}
 	m, err := migrate.New(
 		"file://internal/app/db/migrations",
-		fmt.Sprintf("%s?sslmode=disable", dbDSN))
+		dbDSN)
 	if err != nil {
 		log.Fatal(err)
 		return err
