@@ -11,6 +11,9 @@ import (
 )
 
 func RunMigrations(dbDSN string) error {
+	if dbDSN == "" {
+		return nil
+	}
 	m, err := migrate.New(
 		"file://internal/app/db/migrations",
 		fmt.Sprintf("%s?sslmode=disable", dbDSN))

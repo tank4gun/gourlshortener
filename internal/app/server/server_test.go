@@ -18,7 +18,7 @@ func TestCreateServer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			createdServer := CreateServer(&tt.startStorage, nil)
+			createdServer := CreateServer(&tt.startStorage)
 			assert.NotNil(t, createdServer)
 		})
 	}
