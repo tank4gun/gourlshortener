@@ -1,16 +1,29 @@
 package storage
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
+	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
+
+type FullInfoURLResponse struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
+var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 type Repository interface {
 	InsertValue(value string, userID uint) error
 	GetValueByKeyAndUserID(key uint, userID uint) (string, error)
 	GetNextIndex() (uint, error)
+	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int)
+	Ping() error
 }
 
 type Storage struct {
@@ -19,6 +32,22 @@ type Storage struct {
 	NextIndex       uint
 	Encoder         *json.Encoder
 	Decoder         *json.Decoder
+}
+
+type DBStorage struct {
+	db *sql.DB
+}
+
+func CreateShortURL(currInd uint) string {
+	var sb strings.Builder
+	for {
+		if currInd == 0 {
+			break
+		}
+		sb.WriteByte(AllPossibleChars[currInd%62])
+		currInd = currInd / 62
+	}
+	return sb.String()
 }
 
 type MapItem struct {
@@ -33,7 +62,14 @@ func Max(x, y uint) uint {
 	return x
 }
 
-func NewStorage(internalStorage map[uint]string, nextInd uint, filename string) (*Storage, error) {
+func NewStorage(internalStorage map[uint]string, nextInd uint, filename string, dbDSN string) (Repository, error) {
+	if dbDSN != "" {
+		database, err := sql.Open("pgx", dbDSN)
+		if err != nil {
+			return nil, err
+		}
+		return &DBStorage{database}, nil
+	}
 	if filename == "" {
 		return &Storage{internalStorage, make(map[uint][]uint), nextInd, nil, nil}, nil
 	} else {
@@ -55,6 +91,28 @@ func NewStorage(internalStorage map[uint]string, nextInd uint, filename string) 
 			nextInd = Max(nextInd, mapItem.Key)
 		}
 	}
+}
+
+func (strg *Storage) Ping() error {
+	return nil
+}
+
+func (strg *Storage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int) {
+	userURLs, ok := strg.UserIDToURLID[userID]
+	if !ok {
+		return nil, http.StatusNoContent
+	}
+	responseList := make([]FullInfoURLResponse, 0)
+	for _, URLID := range userURLs {
+		shortURL := CreateShortURL(URLID)
+		shortURL = baseURL + shortURL
+		originalURL, ok := strg.InternalStorage[URLID]
+		if !ok {
+			return nil, http.StatusInternalServerError
+		}
+		responseList = append(responseList, FullInfoURLResponse{ShortURL: shortURL, OriginalURL: originalURL})
+	}
+	return responseList, 200
 }
 
 func (strg *Storage) GetNextIndex() (uint, error) {
@@ -92,16 +150,89 @@ func Contains(list []uint, value uint) error {
 }
 
 func (strg *Storage) GetValueByKeyAndUserID(key uint, userID uint) (string, error) {
-	//userURLs, ok := strg.UserIDToURLID[userID]
-	//if !ok {
-	//	return "", errors.New("got userID not presented in storage")
-	//}
-	//if err := Contains(userURLs, key); err != nil {
-	//	return "", err
-	//}
 	_, ok := strg.InternalStorage[key]
 	if !ok {
 		return "", errors.New("got key not presented in storage")
 	}
 	return strg.InternalStorage[key], nil
+}
+
+func (strg *DBStorage) GetNextIndex() (uint, error) {
+	row := strg.db.QueryRow("Select last_value from url_id_seq")
+	var currInd sql.NullInt64
+	err := row.Scan(&currInd)
+	if err != nil {
+		return 0, err
+	}
+	if currInd.Valid {
+		val := currInd.Int64
+		return uint(val) + 1, nil
+	} else {
+		return 1, nil
+	}
+}
+
+func (strg *DBStorage) InsertValue(value string, userID uint) error {
+	var URLID uint
+	row := strg.db.QueryRow("INSERT INTO url (value) values ($1) returning id", value)
+	err := row.Scan(&URLID)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	row = strg.db.QueryRow("INSERT INTO user_url (user_id, url_id) values ($1, $2)", userID, URLID)
+	err = row.Scan()
+	if err != nil && err != sql.ErrNoRows {
+		log.Fatal(err)
+		return err
+	}
+	return nil
+}
+
+func (strg *DBStorage) GetValueByKeyAndUserID(key uint, userID uint) (string, error) {
+	row := strg.db.QueryRow("SELECT value from url where id = $1", key)
+	var value string
+	err := row.Scan(&value)
+	if err != nil {
+		return "", errors.New("got key not presented in storage")
+	}
+	return value, nil
+}
+
+func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int) {
+	userURLs := make([]uint, 0)
+	rows, err := strg.db.Query("SELECT url_id from user_url where user_id = $1", userID)
+	if err != nil {
+		return nil, http.StatusNoContent
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var URLID uint
+		err = rows.Scan(&URLID)
+		if err != nil {
+			return nil, http.StatusNoContent
+		}
+		userURLs = append(userURLs, URLID)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, http.StatusNoContent
+	}
+
+	responseList := make([]FullInfoURLResponse, 0)
+	for _, URLID := range userURLs {
+		shortURL := CreateShortURL(URLID)
+		shortURL = baseURL + shortURL
+		originalURL, err := strg.GetValueByKeyAndUserID(URLID, userID)
+		if err != nil {
+			return nil, http.StatusInternalServerError
+		}
+		responseList = append(responseList, FullInfoURLResponse{ShortURL: shortURL, OriginalURL: originalURL})
+	}
+	return responseList, 200
+}
+
+func (strg *DBStorage) Ping() error {
+	err := strg.db.Ping()
+	return err
 }

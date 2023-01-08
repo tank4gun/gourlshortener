@@ -6,7 +6,6 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -100,12 +99,12 @@ func CheckAuth(next http.Handler) http.Handler {
 	})
 }
 
-func CreateServer(startStorage *storage.Storage, database *sql.DB) *http.Server {
+func CreateServer(startStorage storage.Repository) *http.Server {
 	router := chi.NewRouter()
 	router.Use(ReceiveCompressed)
 	router.Use(SendCompressed)
 	router.Use(CheckAuth)
-	handlerWithStorage := handlers.NewHandlerWithStorage(startStorage, database)
+	handlerWithStorage := handlers.NewHandlerWithStorage(startStorage)
 	router.Post("/", handlerWithStorage.CreateShortURLHandler)
 	router.Get("/{id}", handlerWithStorage.GetURLByIDHandler)
 	router.Post("/api/shorten", handlerWithStorage.CreateShortenURLFromBodyHandler)

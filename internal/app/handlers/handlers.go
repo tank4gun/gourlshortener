@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
@@ -9,19 +8,17 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"strings"
 )
 
 type userCtxName string
 
-var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 var UserIDCtxName = userCtxName("UserID")
 var CookieKey = []byte("URL-Shortener-Key")
 var URLShortenderCookieName = "URL-Shortener"
 
 type HandlerWithStorage struct {
-	storage *storage.Storage
-	db      *sql.DB
+	storage storage.Repository
+	//db      *sql.DB
 	baseURL string
 }
 
@@ -33,31 +30,14 @@ type ShortenURLResponse struct {
 	URL string `json:"result"`
 }
 
-type FullInfoURLResponse struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
-}
-
-func NewHandlerWithStorage(storageVal *storage.Storage, db *sql.DB) *HandlerWithStorage {
-	return &HandlerWithStorage{storage: storageVal, db: db, baseURL: varprs.BaseURL}
-}
-
-func CreateShortURL(currInd uint) string {
-	var sb strings.Builder
-	for {
-		if currInd == 0 {
-			break
-		}
-		sb.WriteByte(AllPossibleChars[currInd%62])
-		currInd = currInd / 62
-	}
-	return sb.String()
+func NewHandlerWithStorage(storageVal storage.Repository) *HandlerWithStorage {
+	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL}
 }
 
 func ConvertShortURLToID(shortURL string) uint {
 	var id uint = 0
 	var charToIndex = make(map[int32]uint)
-	for index, val := range AllPossibleChars {
+	for index, val := range storage.AllPossibleChars {
 		charToIndex[val] = uint(index)
 	}
 	for index, value := range shortURL {
@@ -75,7 +55,7 @@ func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (sh
 	if strgErr != nil {
 		return "", "Couldn't insert new value into storage", 500
 	}
-	shortURL := CreateShortURL(currInd)
+	shortURL := storage.CreateShortURL(currInd)
 	return shortURL, "", 0
 }
 
@@ -151,21 +131,10 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 
 func (strg *HandlerWithStorage) GetAllURLs(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(UserIDCtxName).(uint)
-	userURLs, ok := strg.storage.UserIDToURLID[userID]
-	if !ok {
-		w.WriteHeader(http.StatusNoContent)
+	responseList, errCode := strg.storage.GetAllURLsByUserID(userID, strg.baseURL)
+	if errCode != http.StatusOK {
+		w.WriteHeader(errCode)
 		return
-	}
-	responseList := make([]FullInfoURLResponse, 0)
-	for _, URLID := range userURLs {
-		shortURL := CreateShortURL(URLID)
-		shortURL = strg.baseURL + shortURL
-		originalURL, ok := strg.storage.InternalStorage[URLID]
-		if !ok {
-			http.Error(w, "Could not get URL from storage by ID", http.StatusInternalServerError)
-			return
-		}
-		responseList = append(responseList, FullInfoURLResponse{ShortURL: shortURL, OriginalURL: originalURL})
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -182,7 +151,7 @@ func (strg *HandlerWithStorage) GetAllURLs(w http.ResponseWriter, r *http.Reques
 }
 
 func (strg *HandlerWithStorage) Ping(w http.ResponseWriter, r *http.Request) {
-	err := strg.db.Ping()
+	err := strg.storage.Ping()
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

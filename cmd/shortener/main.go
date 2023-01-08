@@ -10,10 +10,11 @@ import (
 
 func main() {
 	varprs.Init()
+	db.RunMigrations(varprs.DatabaseDSN)
 	internalStorage := map[uint]string{}
 	nextIndex := uint(1)
-	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath)
-	database, _ := db.CreateDB(varprs.DatabaseDSN)
-	currentServer := server.CreateServer(strg, database)
+	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath, varprs.DatabaseDSN)
+	//database, _ := db.CreateDB(varprs.DatabaseDSN)
+	currentServer := server.CreateServer(strg)
 	log.Fatal(currentServer.ListenAndServe())
 }

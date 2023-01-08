@@ -65,7 +65,7 @@ func TestGetURLByIDHandler(t *testing.T) {
 			request = request.WithContext(ctx)
 			//next.ServeHTTP(w, r.WithContext(ctx))
 			w := httptest.NewRecorder()
-			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.currentStorage, nil).GetURLByIDHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.currentStorage).GetURLByIDHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -109,7 +109,7 @@ func TestCreateShortURLHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
 			request = request.WithContext(ctx)
-			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage, nil).CreateShortURLHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortURLHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			assert.Equal(t, tt.want.code, result.StatusCode)
@@ -177,7 +177,7 @@ func TestCreateShortURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := CreateShortURL(tt.index)
+			result := storage.CreateShortURL(tt.index)
 			assert.Equal(t, tt.expectedShortURL, result)
 		})
 	}
@@ -244,7 +244,7 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
 			request = request.WithContext(ctx)
-			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage, nil).CreateShortenURLFromBodyHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortenURLFromBodyHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			assert.Equal(t, tt.want.code, result.StatusCode)
