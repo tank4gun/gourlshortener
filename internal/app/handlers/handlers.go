@@ -30,13 +30,13 @@ type ShortenURLResponse struct {
 	URL string `json:"result"`
 }
 
-type BatchUrlRequest struct {
-	CorrelationId string `json:"correlation_id"`
+type BatchURLRequest struct {
+	CorrelationID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`
 }
 
-type BatchUrlResponse struct {
-	CorrelationId string `json:"correlation_id"`
+type BatchURLResponse struct {
+	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
 
@@ -69,22 +69,22 @@ func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (sh
 	return shortURL, "", 0
 }
 
-func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []BatchUrlRequest, userID uint) ([]BatchUrlResponse, string, int) {
+func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []BatchURLRequest, userID uint) ([]BatchURLResponse, string, int) {
 	currInd, indErr := strg.storage.GetNextIndex()
 	if indErr != nil {
-		return make([]BatchUrlResponse, 0), "Bad next index", 500
+		return make([]BatchURLResponse, 0), "Bad next index", 500
 	}
-	var resultURLs []BatchUrlResponse
+	var resultURLs []BatchURLResponse
 	var insertURLs []string
 	for index, URLrequest := range batchURLs {
 		shortURL := storage.CreateShortURL(currInd + uint(index))
 		insertURLs = append(insertURLs, URLrequest.OriginalURL)
-		resultURL := BatchUrlResponse{CorrelationId: URLrequest.CorrelationId, ShortURL: shortURL}
+		resultURL := BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: shortURL}
 		resultURLs = append(resultURLs, resultURL)
 	}
 	err := strg.storage.InsertBatchValues(insertURLs, currInd, userID)
 	if err != nil {
-		return make([]BatchUrlResponse, 0), "Error while inserting into storage", 500
+		return make([]BatchURLResponse, 0), "Error while inserting into storage", 500
 	}
 	return resultURLs, "", 0
 }
@@ -166,7 +166,7 @@ func (strg *HandlerWithStorage) CreateShortenURLBatchHandler(w http.ResponseWrit
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	var batchURLs []BatchUrlRequest
+	var batchURLs []BatchURLRequest
 	err = json.Unmarshal(jsonBody, &batchURLs)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
