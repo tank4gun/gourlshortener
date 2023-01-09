@@ -179,7 +179,7 @@ func (strg *HandlerWithStorage) CreateShortenURLBatchHandler(w http.ResponseWrit
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(201)
 	if resultURLsMarshalled, err := json.Marshal(resultURLs); err == nil {
 		_, err := w.Write(resultURLsMarshalled)
 		if err != nil {
