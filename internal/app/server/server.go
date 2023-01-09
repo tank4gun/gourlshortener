@@ -82,7 +82,7 @@ func CheckAuth(next http.Handler) http.Handler {
 			h.Write(cookieValue[:4])
 			sign := h.Sum(nil)
 			if hmac.Equal(sign, cookieValue[4:]) {
-				ctx := context.WithValue(r.Context(), handlers.UserIDCtxName, uint(binary.BigEndian.Uint32(cookieValue[:4])))
+				ctx := context.WithValue(r.Context(), handlers.UserIDCtxName, uint(binary.BigEndian.Uint16(cookieValue[:4])))
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
@@ -94,7 +94,7 @@ func CheckAuth(next http.Handler) http.Handler {
 		sign := h.Sum(nil)
 		newCookie := http.Cookie{Name: handlers.URLShortenderCookieName, Value: hex.EncodeToString(append(newID[:], sign[:]...))}
 		http.SetCookie(w, &newCookie)
-		ctx := context.WithValue(r.Context(), handlers.UserIDCtxName, uint(binary.BigEndian.Uint32(newID)))
+		ctx := context.WithValue(r.Context(), handlers.UserIDCtxName, uint(binary.BigEndian.Uint16(newID)))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
