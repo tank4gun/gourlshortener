@@ -79,7 +79,7 @@ func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []BatchURLRequest,
 	for index, URLrequest := range batchURLs {
 		shortURL := storage.CreateShortURL(currInd + uint(index))
 		insertURLs = append(insertURLs, URLrequest.OriginalURL)
-		resultURL := BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: shortURL}
+		resultURL := BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: strg.baseURL + shortURL}
 		resultURLs = append(resultURLs, resultURL)
 	}
 	err := strg.storage.InsertBatchValues(insertURLs, currInd, userID)
