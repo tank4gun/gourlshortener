@@ -8,13 +8,17 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"strings"
 )
 
-var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+type userCtxName string
+
+var UserIDCtxName = userCtxName("UserID")
+var CookieKey = []byte("URL-Shortener-Key")
+var URLShortenderCookieName = "URL-Shortener"
 
 type HandlerWithStorage struct {
-	storage *storage.Storage
+	storage storage.Repository
+	//db      *sql.DB
 	baseURL string
 }
 
@@ -26,26 +30,24 @@ type ShortenURLResponse struct {
 	URL string `json:"result"`
 }
 
-func NewHandlerWithStorage(storageVal *storage.Storage) *HandlerWithStorage {
-	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL}
+type BatchURLRequest struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
 }
 
-func CreateShortURL(currInd uint) string {
-	var sb strings.Builder
-	for {
-		if currInd == 0 {
-			break
-		}
-		sb.WriteByte(AllPossibleChars[currInd%62])
-		currInd = currInd / 62
-	}
-	return sb.String()
+type BatchURLResponse struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
+}
+
+func NewHandlerWithStorage(storageVal storage.Repository) *HandlerWithStorage {
+	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL}
 }
 
 func ConvertShortURLToID(shortURL string) uint {
 	var id uint = 0
 	var charToIndex = make(map[int32]uint)
-	for index, val := range AllPossibleChars {
+	for index, val := range storage.AllPossibleChars {
 		charToIndex[val] = uint(index)
 	}
 	for index, value := range shortURL {
@@ -54,23 +56,43 @@ func ConvertShortURLToID(shortURL string) uint {
 	return id
 }
 
-func (strg *HandlerWithStorage) CreateShortURLByURL(url string) (shortURLResult string, errMsg string, errCode int) {
+func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (shortURLResult string, errMsg string, errCode int) {
 	currInd, indErr := strg.storage.GetNextIndex()
 	if indErr != nil {
 		return "", "Bad next index", 500
 	}
-	strgErr := strg.storage.InsertValue(url)
+	strgErr := strg.storage.InsertValue(url, userID)
 	if strgErr != nil {
 		return "", "Couldn't insert new value into storage", 500
 	}
-	shortURL := CreateShortURL(currInd)
+	shortURL := storage.CreateShortURL(currInd)
 	return shortURL, "", 0
+}
+
+func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []BatchURLRequest, userID uint) ([]BatchURLResponse, string, int) {
+	currInd, indErr := strg.storage.GetNextIndex()
+	if indErr != nil {
+		return make([]BatchURLResponse, 0), "Bad next index", 500
+	}
+	var resultURLs []BatchURLResponse
+	var insertURLs []string
+	for index, URLrequest := range batchURLs {
+		shortURL := storage.CreateShortURL(currInd + uint(index))
+		insertURLs = append(insertURLs, URLrequest.OriginalURL)
+		resultURL := BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: strg.baseURL + shortURL}
+		resultURLs = append(resultURLs, resultURL)
+	}
+	err := strg.storage.InsertBatchValues(insertURLs, currInd, userID)
+	if err != nil {
+		return make([]BatchURLResponse, 0), "Error while inserting into storage", 500
+	}
+	return resultURLs, "", 0
 }
 
 func (strg *HandlerWithStorage) GetURLByIDHandler(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 	id := ConvertShortURLToID(shortURL)
-	url, err := strg.storage.GetValueByKey(id)
+	url, err := strg.storage.GetValueByKeyAndUserID(id, r.Context().Value(UserIDCtxName).(uint))
 	if err != nil {
 		http.Error(w, "Couldn't find url for id "+shortURL, 400)
 		return
@@ -88,7 +110,7 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 		http.Error(w, "Got bad body content", 400)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(string(url))
+	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(string(url), r.Context().Value(UserIDCtxName).(uint))
 	if errorCode != 0 {
 		http.Error(w, errorMessage, errorCode)
 		return
@@ -117,7 +139,7 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 		http.Error(w, "Got empty url in Body", http.StatusUnprocessableEntity)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(requestURL.URL)
+	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(requestURL.URL, r.Context().Value(UserIDCtxName).(uint))
 	if errorCode != 0 {
 		http.Error(w, errorMessage, errorCode)
 		return
@@ -135,4 +157,69 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 		http.Error(w, err.Error(), 500)
 		return
 	}
+}
+
+func (strg *HandlerWithStorage) CreateShortenURLBatchHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	jsonBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	var batchURLs []BatchURLRequest
+	err = json.Unmarshal(jsonBody, &batchURLs)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	resultURLs, errorMessage, errorCode := strg.CreateShortURLBatch(batchURLs, r.Context().Value(UserIDCtxName).(uint))
+
+	if errorCode != 0 {
+		http.Error(w, errorMessage, errorCode)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	if resultURLsMarshalled, err := json.Marshal(resultURLs); err == nil {
+		_, err := w.Write(resultURLsMarshalled)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	} else {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+}
+
+func (strg *HandlerWithStorage) GetAllURLs(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDCtxName).(uint)
+	responseList, errCode := strg.storage.GetAllURLsByUserID(userID, strg.baseURL)
+	if errCode != http.StatusOK {
+		w.WriteHeader(errCode)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if responseMarshalled, err := json.Marshal(responseList); err == nil {
+		_, err = w.Write(responseMarshalled)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	} else {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+}
+
+func (strg *HandlerWithStorage) Ping(w http.ResponseWriter, r *http.Request) {
+	err := strg.storage.Ping()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	var empty []byte
+	w.Write(empty)
 }
