@@ -30,6 +30,16 @@ type ShortenURLResponse struct {
 	URL string `json:"result"`
 }
 
+type BatchUrlRequest struct {
+	CorrelationId string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+}
+
+type BatchUrlResponse struct {
+	CorrelationId string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
+}
+
 func NewHandlerWithStorage(storageVal storage.Repository) *HandlerWithStorage {
 	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL}
 }
@@ -57,6 +67,26 @@ func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (sh
 	}
 	shortURL := storage.CreateShortURL(currInd)
 	return shortURL, "", 0
+}
+
+func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []BatchUrlRequest, userID uint) ([]BatchUrlResponse, string, int) {
+	currInd, indErr := strg.storage.GetNextIndex()
+	if indErr != nil {
+		return make([]BatchUrlResponse, 0), "Bad next index", 500
+	}
+	var resultURLs []BatchUrlResponse
+	var insertURLs []string
+	for index, URLrequest := range batchURLs {
+		shortURL := storage.CreateShortURL(currInd + uint(index))
+		insertURLs = append(insertURLs, URLrequest.OriginalURL)
+		resultURL := BatchUrlResponse{CorrelationId: URLrequest.CorrelationId, ShortURL: shortURL}
+		resultURLs = append(resultURLs, resultURL)
+	}
+	err := strg.storage.InsertBatchValues(insertURLs, currInd, userID)
+	if err != nil {
+		return make([]BatchUrlResponse, 0), "Error while inserting into storage", 500
+	}
+	return resultURLs, "", 0
 }
 
 func (strg *HandlerWithStorage) GetURLByIDHandler(w http.ResponseWriter, r *http.Request) {
@@ -119,6 +149,39 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 	w.WriteHeader(201)
 	if responseMarshalled, err := json.Marshal(resultResponse); err == nil {
 		_, err = w.Write(responseMarshalled)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	} else {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+}
+
+func (strg *HandlerWithStorage) CreateShortenURLBatchHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	jsonBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	var batchURLs []BatchUrlRequest
+	err = json.Unmarshal(jsonBody, &batchURLs)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	resultURLs, errorMessage, errorCode := strg.CreateShortURLBatch(batchURLs, r.Context().Value(UserIDCtxName).(uint))
+
+	if errorCode != 0 {
+		http.Error(w, errorMessage, errorCode)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	if resultURLsMarshalled, err := json.Marshal(resultURLs); err == nil {
+		_, err := w.Write(resultURLsMarshalled)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return

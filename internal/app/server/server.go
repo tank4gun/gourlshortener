@@ -110,6 +110,7 @@ func CreateServer(startStorage storage.Repository) *http.Server {
 	router.Post("/api/shorten", handlerWithStorage.CreateShortenURLFromBodyHandler)
 	router.Get("/api/user/urls", handlerWithStorage.GetAllURLs)
 	router.Get("/ping", handlerWithStorage.Ping)
+	router.Post("/api/shorten/batch", handlerWithStorage.CreateShortenURLBatchHandler)
 
 	server := &http.Server{
 		Addr:    varprs.ServerAddress,

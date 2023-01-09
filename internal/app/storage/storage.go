@@ -23,6 +23,7 @@ type Repository interface {
 	GetValueByKeyAndUserID(key uint, userID uint) (string, error)
 	GetNextIndex() (uint, error)
 	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int)
+	InsertBatchValues(values []string, startIndex uint, userID uint) error
 	Ping() error
 }
 
@@ -157,6 +158,29 @@ func (strg *Storage) GetValueByKeyAndUserID(key uint, userID uint) (string, erro
 	return strg.InternalStorage[key], nil
 }
 
+func (strg *Storage) InsertBatchValues(values []string, startIndex uint, userID uint) error {
+	for index, value := range values {
+		indexToInsert := startIndex + uint(index)
+		_, ok := strg.InternalStorage[indexToInsert]
+		if ok {
+			return errors.New("got same key already in storage")
+		}
+		strg.InternalStorage[indexToInsert] = value
+		_, ok = strg.UserIDToURLID[userID]
+		if !ok {
+			strg.UserIDToURLID[userID] = make([]uint, 0)
+		}
+		strg.UserIDToURLID[userID] = append(strg.UserIDToURLID[userID][:], indexToInsert)
+		if strg.Encoder != nil {
+			mapItem := MapItem{Key: indexToInsert, Value: value}
+			if err := strg.Encoder.Encode(mapItem); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (strg *DBStorage) GetNextIndex() (uint, error) {
 	row := strg.db.QueryRow("Select last_value from url_id_seq")
 	var currInd sql.NullInt64
@@ -235,4 +259,42 @@ func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullIn
 func (strg *DBStorage) Ping() error {
 	err := strg.db.Ping()
 	return err
+}
+
+func (strg *DBStorage) InsertBatchValues(values []string, startIndex uint, userID uint) error {
+	tx, err := strg.db.Begin()
+	if err != nil {
+		return err
+	}
+	URLstmt, err := tx.Prepare("INSERT INTO url (value) VALUES ($1)")
+	if err != nil {
+		return err
+	}
+	UserURLstmt, err := tx.Prepare("INSERT INTO user_url (user_id, url_id) VALUES ($1, $2)")
+	if err != nil {
+		return err
+	}
+	defer URLstmt.Close()
+	defer UserURLstmt.Close()
+	for index, value := range values {
+		if _, err := URLstmt.Exec(value); err != nil {
+			if err = tx.Rollback(); err != nil {
+				log.Fatalf("Insert to url, need rollback, %v", err)
+				return err
+			}
+			return err
+		}
+		if _, err = UserURLstmt.Exec(userID, startIndex+uint(index)); err != nil {
+			if err = tx.Rollback(); err != nil {
+				log.Fatalf("Insert to user_url, need rollback, %v", err)
+				return err
+			}
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("Unable to commit: %v", err)
+		return err
+	}
+	return nil
 }
