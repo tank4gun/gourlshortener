@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"io"
+	"log"
 	"math"
 	"net/http"
 )
@@ -62,6 +64,11 @@ func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (sh
 		return "", "Bad next index", 500
 	}
 	strgErr := strg.storage.InsertValue(url, userID)
+	var exErr *storage.ExistError
+	log.Println(strgErr)
+	if errors.As(strgErr, &exErr) {
+		return storage.CreateShortURL(exErr.ID), "", 409
+	}
 	if strgErr != nil {
 		return "", "Couldn't insert new value into storage", 500
 	}
@@ -111,11 +118,15 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 		return
 	}
 	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(string(url), r.Context().Value(UserIDCtxName).(uint))
-	if errorCode != 0 {
+	if errorCode != 0 && errorCode != 409 {
 		http.Error(w, errorMessage, errorCode)
 		return
 	}
-	w.WriteHeader(201)
+	if errorCode == 409 {
+		w.WriteHeader(409)
+	} else {
+		w.WriteHeader(201)
+	}
 	_, errWrite := w.Write([]byte(strg.baseURL + shortURL))
 	if errWrite != nil {
 		http.Error(w, "Bad code", 500)
@@ -140,13 +151,17 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 		return
 	}
 	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(requestURL.URL, r.Context().Value(UserIDCtxName).(uint))
-	if errorCode != 0 {
+	if errorCode != 0 && errorCode != 409 {
 		http.Error(w, errorMessage, errorCode)
 		return
 	}
 	resultResponse := ShortenURLResponse{strg.baseURL + shortURL}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
+	if errorCode == 409 {
+		w.WriteHeader(409)
+	} else {
+		w.WriteHeader(201)
+	}
 	if responseMarshalled, err := json.Marshal(resultResponse); err == nil {
 		_, err = w.Write(responseMarshalled)
 		if err != nil {

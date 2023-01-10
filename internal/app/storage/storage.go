@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -125,6 +126,13 @@ func (strg *Storage) InsertValue(value string, userID uint) error {
 	if ok {
 		return errors.New("got same key already in storage")
 	}
+	for i := uint(0); i < strg.NextIndex; i++ {
+		URL, ok := strg.InternalStorage[strg.NextIndex]
+		if ok && URL == value {
+			log.Printf("Got same URL in storage %s", value)
+			return &ExistError{ID: i, Err: "Got same URL in storage"}
+		}
+	}
 	strg.InternalStorage[strg.NextIndex] = value
 	_, ok = strg.UserIDToURLID[userID]
 	if !ok {
@@ -196,10 +204,29 @@ func (strg *DBStorage) GetNextIndex() (uint, error) {
 	}
 }
 
+type ExistError struct {
+	ID  uint
+	Err string
+}
+
+func (err *ExistError) Error() string {
+	return fmt.Sprintf("%s, id = %v", err.Err, err.ID)
+}
+
 func (strg *DBStorage) InsertValue(value string, userID uint) error {
 	var URLID uint
-	row := strg.db.QueryRow("INSERT INTO url (value) values ($1) returning id", value)
+	row := strg.db.QueryRow("SELECT id from url where value = $1", value)
 	err := row.Scan(&URLID)
+	if err != nil && err != sql.ErrNoRows {
+		log.Println(err)
+		return err
+	}
+	if err == nil {
+		return &ExistError{uint(URLID), "Got existing URL"}
+	}
+	log.Printf("Insert value %s into url table", value)
+	row = strg.db.QueryRow("INSERT INTO url (value) values ($1) returning id", value)
+	err = row.Scan(&URLID)
 	if err != nil {
 		log.Fatal(err)
 		return err
