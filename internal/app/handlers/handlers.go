@@ -158,18 +158,18 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 	resultResponse := ShortenURLResponse{strg.baseURL + shortURL}
 	w.Header().Set("Content-Type", "application/json")
 	if errorCode == 409 {
-		w.WriteHeader(409)
+		w.WriteHeader(http.StatusConflict)
 	} else {
-		w.WriteHeader(201)
+		w.WriteHeader(http.StatusCreated)
 	}
 	if responseMarshalled, err := json.Marshal(resultResponse); err == nil {
 		_, err = w.Write(responseMarshalled)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -178,13 +178,13 @@ func (strg *HandlerWithStorage) CreateShortenURLBatchHandler(w http.ResponseWrit
 	defer r.Body.Close()
 	jsonBody, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	var batchURLs []BatchURLRequest
 	err = json.Unmarshal(jsonBody, &batchURLs)
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	resultURLs, errorMessage, errorCode := strg.CreateShortURLBatch(batchURLs, r.Context().Value(UserIDCtxName).(uint))
@@ -198,16 +198,16 @@ func (strg *HandlerWithStorage) CreateShortenURLBatchHandler(w http.ResponseWrit
 	if resultURLsMarshalled, err := json.Marshal(resultURLs); err == nil {
 		_, err := w.Write(resultURLsMarshalled)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (strg *HandlerWithStorage) GetAllURLs(w http.ResponseWriter, r *http.Request) {
+func (strg *HandlerWithStorage) GetAllURLsHandler(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(UserIDCtxName).(uint)
 	responseList, errCode := strg.storage.GetAllURLsByUserID(userID, strg.baseURL)
 	if errCode != http.StatusOK {
@@ -219,19 +219,19 @@ func (strg *HandlerWithStorage) GetAllURLs(w http.ResponseWriter, r *http.Reques
 	if responseMarshalled, err := json.Marshal(responseList); err == nil {
 		_, err = w.Write(responseMarshalled)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (strg *HandlerWithStorage) Ping(w http.ResponseWriter, r *http.Request) {
+func (strg *HandlerWithStorage) PingHandler(w http.ResponseWriter, r *http.Request) {
 	err := strg.storage.Ping()
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

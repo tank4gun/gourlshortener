@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/tank4gun/gourlshortener/internal/app/mocks"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"io"
@@ -259,6 +262,42 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 			var responseObj ShortenURLResponse
 			err = json.Unmarshal(responseBody, &responseObj)
 			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestPingHandler(t *testing.T) {
+	tt := []struct {
+		name         string
+		want         wantResponse
+		pingResponse error
+	}{
+		{
+			"ping_success",
+			wantResponse{http.StatusOK, "", ""},
+			nil,
+		},
+		{
+			"ping_failure",
+			wantResponse{http.StatusInternalServerError, "text/plain; charset=utf-8", ""},
+			errors.New("Bad ping request"),
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/ping", nil)
+			w := httptest.NewRecorder()
+			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			request = request.WithContext(ctx)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			repo := mocks.NewMockRepository(ctrl)
+			repo.EXPECT().Ping().Return(tc.pingResponse)
+			handler := http.HandlerFunc(NewHandlerWithStorage(repo).PingHandler)
+			handler.ServeHTTP(w, request)
+			result := w.Result()
+			assert.Equal(t, tc.want.code, result.StatusCode)
+			assert.Equal(t, tc.want.headerContent, result.Header.Get("Content-Type"))
 		})
 	}
 }
