@@ -296,6 +296,7 @@ func TestPingHandler(t *testing.T) {
 			handler := http.HandlerFunc(NewHandlerWithStorage(repo).PingHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
+			defer result.Body.Close()
 			assert.Equal(t, tc.want.code, result.StatusCode)
 			assert.Equal(t, tc.want.headerContent, result.Header.Get("Content-Type"))
 		})
