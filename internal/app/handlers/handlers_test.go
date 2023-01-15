@@ -34,7 +34,7 @@ func TestGetURLByIDHandler(t *testing.T) {
 		{
 			name: "short_url_exists",
 			want: wantResponse{
-				307,
+				http.StatusTemporaryRedirect,
 				"http://ya.ru",
 				"",
 			},
@@ -44,7 +44,7 @@ func TestGetURLByIDHandler(t *testing.T) {
 		{
 			name: "short_url_does_not_exists",
 			want: wantResponse{
-				400,
+				http.StatusBadRequest,
 				"",
 				"",
 			},
@@ -58,15 +58,8 @@ func TestGetURLByIDHandler(t *testing.T) {
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("id", tt.url[1:])
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			//h := hmac.New(sha256.New, CookieKey)
-			//userID := []byte(strconv.Itoa(1))
-			//h.Write(userID)
-			//sign := h.Sum(nil)
-			//newCookie := http.Cookie{Name: URLShortenderCookieName, Value: hex.EncodeToString(append(userID[:], sign[:]...))}
-			//request.Context(&newCookie)
 			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
 			request = request.WithContext(ctx)
-			//next.ServeHTTP(w, r.WithContext(ctx))
 			w := httptest.NewRecorder()
 			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.currentStorage).GetURLByIDHandler)
 			handler.ServeHTTP(w, request)
@@ -90,7 +83,7 @@ func TestCreateShortURLHandler(t *testing.T) {
 		{
 			name: "url_creation_success",
 			want: wantResponse{
-				201,
+				http.StatusCreated,
 				"",
 				"http://localhost:8080/b",
 			},
@@ -197,7 +190,7 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 		{
 			"bad_request_body",
 			wantResponse{
-				400,
+				http.StatusBadRequest,
 				"text/plain; charset=utf-8",
 				"",
 			},
@@ -212,7 +205,7 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 		{
 			"unprocessable_request_body",
 			wantResponse{
-				422,
+				http.StatusUnprocessableEntity,
 				"text/plain; charset=utf-8",
 				"",
 			},
@@ -227,7 +220,7 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 		{
 			"success_case",
 			wantResponse{
-				201,
+				http.StatusCreated,
 				"application/json",
 				`{"result":"http://localhost:8080/b"}`,
 			},
@@ -252,7 +245,7 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 			result := w.Result()
 			assert.Equal(t, tt.want.code, result.StatusCode)
 			assert.Equal(t, tt.want.headerContent, result.Header.Get("Content-Type"))
-			if tt.want.code != 201 {
+			if tt.want.code != http.StatusCreated {
 				return
 			}
 			defer result.Body.Close()

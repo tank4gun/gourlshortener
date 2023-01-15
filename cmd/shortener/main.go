@@ -14,7 +14,6 @@ func main() {
 	internalStorage := map[uint]string{}
 	nextIndex := uint(1)
 	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath, varprs.DatabaseDSN)
-	//database, _ := db.CreateDB(varprs.DatabaseDSN)
 	currentServer := server.CreateServer(strg)
 	log.Fatal(currentServer.ListenAndServe())
 }
