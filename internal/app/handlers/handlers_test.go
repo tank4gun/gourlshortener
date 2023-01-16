@@ -312,7 +312,7 @@ func TestGetAllURLsHandler(t *testing.T) {
 				`[{"short_url":"http://localhost:8080/b","original_url":"http://ya.ru"}]`,
 			},
 			1,
-			[]storage.FullInfoURLResponse{{"http://localhost:8080/b", "http://ya.ru"}},
+			[]storage.FullInfoURLResponse{{ShortURL: "http://localhost:8080/b", OriginalURL: "http://ya.ru"}},
 			200,
 		},
 		{
