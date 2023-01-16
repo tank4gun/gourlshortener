@@ -295,3 +295,57 @@ func TestPingHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAllURLsHandler(t *testing.T) {
+	tt := []struct {
+		name         string
+		want         wantResponse
+		userID       uint
+		mockResponse []storage.FullInfoURLResponse
+		mockError    int
+	}{
+		{
+			"success_urls",
+			wantResponse{
+				http.StatusOK,
+				"application/json",
+				`[{"short_url":"http://localhost:8080/b","original_url":"http://ya.ru"}]`,
+			},
+			1,
+			[]storage.FullInfoURLResponse{{"http://localhost:8080/b", "http://ya.ru"}},
+			200,
+		},
+		{
+			"error_urls",
+			wantResponse{
+				http.StatusInternalServerError,
+				"",
+				"",
+			},
+			1,
+			nil,
+			500,
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
+			w := httptest.NewRecorder()
+			ctx := context.WithValue(request.Context(), UserIDCtxName, tc.userID)
+			request = request.WithContext(ctx)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			repo := mocks.NewMockRepository(ctrl)
+			repo.EXPECT().GetAllURLsByUserID(tc.userID, "http://localhost:8080/").Return(tc.mockResponse, tc.mockError)
+			handler := http.HandlerFunc(NewHandlerWithStorage(repo).GetAllURLsHandler)
+			handler.ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+			responseBody, err := io.ReadAll(result.Body)
+			assert.Nil(t, err)
+			assert.Equal(t, tc.want.code, result.StatusCode)
+			assert.Equal(t, tc.want.headerContent, result.Header.Get("Content-Type"))
+			assert.Equal(t, tc.want.responseContent, string(responseBody))
+		})
+	}
+}
