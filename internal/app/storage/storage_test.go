@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestStorage_GetValueByKey(t *testing.T) {
+func TestStorage_GetValueByKeyAndUserID(t *testing.T) {
 	tests := []struct {
 		name          string
 		startStorage  Storage
@@ -15,7 +15,7 @@ func TestStorage_GetValueByKey(t *testing.T) {
 		{
 			"one_value",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{1: "aaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			1,
 			"aaa",
@@ -23,7 +23,7 @@ func TestStorage_GetValueByKey(t *testing.T) {
 		{
 			"two_values",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, NextIndex: 3, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, UserIDToURLID: map[uint][]uint{1: {2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
 			},
 			2,
 			"bbb",
@@ -31,7 +31,7 @@ func TestStorage_GetValueByKey(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resultValue, err := tt.startStorage.GetValueByKey(tt.key)
+			resultValue, err := tt.startStorage.GetValueByKeyAndUserID(tt.key, 1)
 			assert.Nil(t, err)
 			assert.Equal(t, tt.expectedValue, resultValue)
 		})
@@ -48,27 +48,27 @@ func TestStorage_InsertValue(t *testing.T) {
 		{
 			"empty_storage",
 			Storage{
-				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{}, UserIDToURLID: make(map[uint][]uint), NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			"aaa",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{1: "aaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 		},
 		{
 			"one_value",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa"}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{1: "aaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			"bbb",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, NextIndex: 3, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.startStorage.InsertValue(tt.value)
+			err := tt.startStorage.InsertValue(tt.value, 1)
 			assert.Nil(t, err)
 			assert.Equal(t, tt.expectedStorage, tt.startStorage)
 		})
@@ -84,7 +84,7 @@ func TestStorage_GetNextIndex(t *testing.T) {
 		{
 			"init_next_index",
 			Storage{
-				InternalStorage: map[uint]string{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]string{}, UserIDToURLID: make(map[uint][]uint), NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			1,
 		},
@@ -94,7 +94,8 @@ func TestStorage_GetNextIndex(t *testing.T) {
 				InternalStorage: map[uint]string{
 					1: "a", 2: "b", 3: "c", 4: "aa", 5: "r", 6: "1", 7: "qwe", 8: "d", 9: "tt",
 				},
-				NextIndex: 10, Encoder: nil, Decoder: nil,
+				UserIDToURLID: make(map[uint][]uint),
+				NextIndex:     10, Encoder: nil, Decoder: nil,
 			},
 			10,
 		},
