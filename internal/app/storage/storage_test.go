@@ -15,7 +15,7 @@ func TestStorage_GetValueByKeyAndUserID(t *testing.T) {
 		{
 			"one_value",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: URL{"aaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			1,
 			"aaa",
@@ -23,7 +23,7 @@ func TestStorage_GetValueByKeyAndUserID(t *testing.T) {
 		{
 			"two_values",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, UserIDToURLID: map[uint][]uint{1: {2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: URL{"aaa", false}, 2: URL{"bbb", false}}, UserIDToURLID: map[uint][]uint{1: {2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
 			},
 			2,
 			"bbb",
@@ -48,21 +48,21 @@ func TestStorage_InsertValue(t *testing.T) {
 		{
 			"empty_storage",
 			Storage{
-				InternalStorage: map[uint]string{}, UserIDToURLID: make(map[uint][]uint), NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{}, UserIDToURLID: make(map[uint][]uint), NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			"aaa",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: URL{"aaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 		},
 		{
 			"one_value",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: URL{"aaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			"bbb",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaa", 2: "bbb"}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: URL{"aaa", false}, 2: URL{"bbb", false}}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
 			},
 		},
 	}
@@ -84,15 +84,15 @@ func TestStorage_GetNextIndex(t *testing.T) {
 		{
 			"init_next_index",
 			Storage{
-				InternalStorage: map[uint]string{}, UserIDToURLID: make(map[uint][]uint), NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{}, UserIDToURLID: make(map[uint][]uint), NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			1,
 		},
 		{
 			"10th_next_index",
 			Storage{
-				InternalStorage: map[uint]string{
-					1: "a", 2: "b", 3: "c", 4: "aa", 5: "r", 6: "1", 7: "qwe", 8: "d", 9: "tt",
+				InternalStorage: map[uint]URL{
+					1: URL{"a", false}, 2: URL{"b", false}, 3: URL{"c", false}, 4: URL{"aa", false}, 5: URL{"r", false}, 6: URL{"1", false}, 7: URL{"qwe", false}, 8: URL{"d", false}, 9: URL{"tt", false},
 				},
 				UserIDToURLID: make(map[uint][]uint),
 				NextIndex:     10, Encoder: nil, Decoder: nil,

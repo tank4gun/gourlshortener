@@ -38,7 +38,7 @@ func TestGetURLByIDHandler(t *testing.T) {
 				"http://ya.ru",
 				"",
 			},
-			currentStorage: storage.Storage{InternalStorage: map[uint]string{1: "http://ya.ru"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2},
+			currentStorage: storage.Storage{InternalStorage: map[uint]storage.URL{1: {"http://ya.ru", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2},
 			url:            "/b",
 		},
 		{
@@ -48,7 +48,7 @@ func TestGetURLByIDHandler(t *testing.T) {
 				"",
 				"",
 			},
-			currentStorage: storage.Storage{InternalStorage: map[uint]string{2: "http://ya.ru"}, NextIndex: 3},
+			currentStorage: storage.Storage{InternalStorage: map[uint]storage.URL{2: {"http://ya.ru", false}}, NextIndex: 3},
 			url:            "/b",
 		},
 	}
@@ -88,10 +88,10 @@ func TestCreateShortURLHandler(t *testing.T) {
 				"http://localhost:8080/b",
 			},
 			previousStorage: storage.Storage{
-				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			resultStorage: storage.Storage{
-				InternalStorage: map[uint]string{1: "http://ya.ru"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]storage.URL{1: {"http://ya.ru", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			url: "http://ya.ru",
 		},
@@ -195,10 +195,10 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 				"",
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			"some_bad_input",
 		},
@@ -210,10 +210,10 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 				"",
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			`{"ur1": "some_bad_input"}`,
 		},
@@ -225,10 +225,10 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 				`{"result":"http://localhost:8080/b"}`,
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			storage.Storage{
-				InternalStorage: map[uint]string{1: "http://ya.ru"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]storage.URL{1: {"http://ya.ru", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			`{"url": "http://ya.ru"}`,
 		},

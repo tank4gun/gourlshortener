@@ -13,7 +13,7 @@ func TestCreateServer(t *testing.T) {
 	}{
 		{
 			"server_created",
-			storage.Storage{InternalStorage: map[uint]string{}, NextIndex: 1},
+			storage.Storage{InternalStorage: map[uint]storage.URL{}, NextIndex: 1},
 		},
 	}
 	for _, tt := range tests {
