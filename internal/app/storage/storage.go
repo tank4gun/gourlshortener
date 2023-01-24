@@ -169,6 +169,17 @@ func (strg *Storage) GetValueByKeyAndUserID(key uint, userID uint) (string, int)
 }
 
 func (strg *Storage) MarkBatchAsDeleted(IDs []uint, userID uint) error {
+	userURLs, ok := strg.UserIDToURLID[userID]
+	if !ok {
+		return errors.New("couldn't get userURLs")
+	}
+	for _, ID := range IDs {
+		for _, userURLID := range userURLs {
+			if ID == userURLID {
+				delete(strg.InternalStorage, ID)
+			}
+		}
+	}
 	return nil
 }
 
