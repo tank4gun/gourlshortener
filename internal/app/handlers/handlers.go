@@ -49,7 +49,7 @@ type BatchURLResponse struct {
 }
 
 func NewHandlerWithStorage(storageVal storage.Repository) *HandlerWithStorage {
-	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL, deleteChannel: make(chan RequestToDelete, 10)}
+	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL, deleteChannel: make(chan RequestToDelete, 1)}
 }
 
 func ConvertShortURLBatchToIDs(shortURLBatch []string) []uint {
@@ -79,7 +79,7 @@ func (strg *HandlerWithStorage) DeleteURLsDaemon() {
 		log.Printf("Got URLIDs %v", URLIDs)
 		_ = strg.storage.MarkBatchAsDeleted(URLIDs, reqToDelete.UserID)
 	}
-	close(strg.deleteChannel)
+	//close(strg.deleteChannel)
 }
 
 func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (shortURLResult string, errMsg string, errCode int) {
