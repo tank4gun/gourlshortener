@@ -1,0 +1,1 @@
+ALTER TABLE url ADD deleted bool not null default false;
