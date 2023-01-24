@@ -32,7 +32,7 @@ func TestStorage_GetValueByKeyAndUserID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resultValue, err := tt.startStorage.GetValueByKeyAndUserID(tt.key, 1)
-			assert.Nil(t, err)
+			assert.Equal(t, err, 0)
 			assert.Equal(t, tt.expectedValue, resultValue)
 		})
 	}
