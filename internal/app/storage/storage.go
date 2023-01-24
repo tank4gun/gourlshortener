@@ -133,8 +133,8 @@ func (strg *Storage) InsertValue(value string, userID uint) error {
 		return errors.New("got same key already in storage")
 	}
 	for i := uint(0); i < strg.NextIndex; i++ {
-		URL, ok := strg.InternalStorage[strg.NextIndex]
-		if ok && URL.Value == value {
+		URLval, ok := strg.InternalStorage[strg.NextIndex]
+		if ok && URLval.Value == value {
 			log.Printf("Got same URL in storage %s", value)
 			return &ExistError{ID: i, Err: "Got same URL in storage"}
 		}

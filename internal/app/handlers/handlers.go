@@ -94,7 +94,7 @@ func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (sh
 		return storage.CreateShortURL(exErr.ID), "", http.StatusConflict
 	}
 	if strgErr != nil {
-		return "", "Couldn't insert new value into storage", http.StatusInternalServerError
+		return "", strgErr.Error(), http.StatusInternalServerError
 	}
 	shortURL := storage.CreateShortURL(currInd)
 	return shortURL, "", 0
