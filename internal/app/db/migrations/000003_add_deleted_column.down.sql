@@ -1,0 +1,1 @@
+AlTER TABLE url Drop Column IF Exists deleted;

@@ -18,10 +18,16 @@ var UserIDCtxName = userCtxName("UserID")
 var CookieKey = []byte("URL-Shortener-Key")
 var URLShortenderCookieName = "URL-Shortener"
 
+type RequestToDelete struct {
+	URLs   []string
+	UserID uint
+}
+
 type HandlerWithStorage struct {
 	storage storage.Repository
 	//db      *sql.DB
-	baseURL string
+	baseURL       string
+	deleteChannel chan RequestToDelete
 }
 
 type URLBodyRequest struct {
@@ -43,7 +49,15 @@ type BatchURLResponse struct {
 }
 
 func NewHandlerWithStorage(storageVal storage.Repository) *HandlerWithStorage {
-	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL}
+	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL, deleteChannel: make(chan RequestToDelete, 10)}
+}
+
+func ConvertShortURLBatchToIDs(shortURLBatch []string) []uint {
+	var result = make([]uint, 0)
+	for _, shortURL := range shortURLBatch {
+		result = append(result, ConvertShortURLToID(shortURL))
+	}
+	return result
 }
 
 func ConvertShortURLToID(shortURL string) uint {
@@ -58,6 +72,16 @@ func ConvertShortURLToID(shortURL string) uint {
 	return id
 }
 
+func (strg *HandlerWithStorage) DeleteURLsDaemon() {
+	for reqToDelete := range strg.deleteChannel {
+		log.Printf("Got request to delete %d", reqToDelete.UserID)
+		URLIDs := ConvertShortURLBatchToIDs(reqToDelete.URLs)
+		log.Printf("Got URLIDs %v", URLIDs)
+		_ = strg.storage.MarkBatchAsDeleted(URLIDs, reqToDelete.UserID)
+	}
+	close(strg.deleteChannel)
+}
+
 func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (shortURLResult string, errMsg string, errCode int) {
 	currInd, indErr := strg.storage.GetNextIndex()
 	if indErr != nil {
@@ -70,7 +94,7 @@ func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (sh
 		return storage.CreateShortURL(exErr.ID), "", http.StatusConflict
 	}
 	if strgErr != nil {
-		return "", "Couldn't insert new value into storage", http.StatusInternalServerError
+		return "", strgErr.Error(), http.StatusInternalServerError
 	}
 	shortURL := storage.CreateShortURL(currInd)
 	return shortURL, "", 0
@@ -99,9 +123,9 @@ func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []BatchURLRequest,
 func (strg *HandlerWithStorage) GetURLByIDHandler(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 	id := ConvertShortURLToID(shortURL)
-	url, err := strg.storage.GetValueByKeyAndUserID(id, r.Context().Value(UserIDCtxName).(uint))
-	if err != nil {
-		http.Error(w, "Couldn't find url for id "+shortURL, http.StatusBadRequest)
+	url, errCode := strg.storage.GetValueByKeyAndUserID(id, r.Context().Value(UserIDCtxName).(uint))
+	if errCode != 0 {
+		http.Error(w, "Couldn't find url for id "+shortURL, errCode)
 		return
 	}
 	w.Header().Set("Location", url)
@@ -235,6 +259,28 @@ func (strg *HandlerWithStorage) PingHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+	var empty []byte
+	w.Write(empty)
+}
+
+func (strg *HandlerWithStorage) DeleteURLs(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDCtxName).(uint)
+	defer r.Body.Close()
+	jsonBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var URLsToDelete []string
+	err = json.Unmarshal(jsonBody, &URLsToDelete)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	go func() {
+		strg.deleteChannel <- RequestToDelete{URLs: URLsToDelete, UserID: userID}
+	}()
+	w.WriteHeader(http.StatusAccepted)
 	var empty []byte
 	w.Write(empty)
 }

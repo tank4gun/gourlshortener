@@ -11,7 +11,7 @@ import (
 func main() {
 	varprs.Init()
 	db.RunMigrations(varprs.DatabaseDSN)
-	internalStorage := map[uint]string{}
+	internalStorage := map[uint]storage.URL{}
 	nextIndex := uint(1)
 	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath, varprs.DatabaseDSN)
 	currentServer := server.CreateServer(strg)

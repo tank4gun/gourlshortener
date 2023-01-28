@@ -21,15 +21,21 @@ var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 
 type Repository interface {
 	InsertValue(value string, userID uint) error
-	GetValueByKeyAndUserID(key uint, userID uint) (string, error)
+	GetValueByKeyAndUserID(key uint, userID uint) (string, int)
 	GetNextIndex() (uint, error)
 	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int)
 	InsertBatchValues(values []string, startIndex uint, userID uint) error
+	MarkBatchAsDeleted(IDs []uint, userID uint) error
 	Ping() error
 }
 
+type URL struct {
+	Value   string
+	Deleted bool
+}
+
 type Storage struct {
-	InternalStorage map[uint]string
+	InternalStorage map[uint]URL
 	UserIDToURLID   map[uint][]uint
 	NextIndex       uint
 	Encoder         *json.Encoder
@@ -64,7 +70,7 @@ func Max(x, y uint) uint {
 	return x
 }
 
-func NewStorage(internalStorage map[uint]string, nextInd uint, filename string, dbDSN string) (Repository, error) {
+func NewStorage(internalStorage map[uint]URL, nextInd uint, filename string, dbDSN string) (Repository, error) {
 	if dbDSN != "" {
 		database, err := sql.Open("pgx", dbDSN)
 		if err != nil {
@@ -79,7 +85,7 @@ func NewStorage(internalStorage map[uint]string, nextInd uint, filename string, 
 		if err != nil {
 			return nil, err
 		}
-		internalStorage := make(map[uint]string)
+		internalStorage := make(map[uint]URL)
 		decoder := json.NewDecoder(file)
 		encoder := json.NewEncoder(file)
 		nextInd := uint(0)
@@ -89,7 +95,7 @@ func NewStorage(internalStorage map[uint]string, nextInd uint, filename string, 
 			if err != nil {
 				return &Storage{internalStorage, make(map[uint][]uint), nextInd + 1, encoder, decoder}, nil
 			}
-			internalStorage[mapItem.Key] = mapItem.Value
+			internalStorage[mapItem.Key] = URL{mapItem.Value, false}
 			nextInd = Max(nextInd, mapItem.Key)
 		}
 	}
@@ -112,7 +118,7 @@ func (strg *Storage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfo
 		if !ok {
 			return nil, http.StatusInternalServerError
 		}
-		responseList = append(responseList, FullInfoURLResponse{ShortURL: shortURL, OriginalURL: originalURL})
+		responseList = append(responseList, FullInfoURLResponse{ShortURL: shortURL, OriginalURL: originalURL.Value})
 	}
 	return responseList, 200
 }
@@ -127,13 +133,13 @@ func (strg *Storage) InsertValue(value string, userID uint) error {
 		return errors.New("got same key already in storage")
 	}
 	for i := uint(0); i < strg.NextIndex; i++ {
-		URL, ok := strg.InternalStorage[strg.NextIndex]
-		if ok && URL == value {
+		URLval, ok := strg.InternalStorage[strg.NextIndex]
+		if ok && URLval.Value == value {
 			log.Printf("Got same URL in storage %s", value)
 			return &ExistError{ID: i, Err: "Got same URL in storage"}
 		}
 	}
-	strg.InternalStorage[strg.NextIndex] = value
+	strg.InternalStorage[strg.NextIndex] = URL{value, false}
 	_, ok = strg.UserIDToURLID[userID]
 	if !ok {
 		strg.UserIDToURLID[userID] = make([]uint, 0)
@@ -158,12 +164,33 @@ func Contains(list []uint, value uint) error {
 	return errors.New("No value " + strconv.Itoa(int(value)) + " in list")
 }
 
-func (strg *Storage) GetValueByKeyAndUserID(key uint, userID uint) (string, error) {
-	_, ok := strg.InternalStorage[key]
+func (strg *Storage) GetValueByKeyAndUserID(key uint, userID uint) (string, int) {
+	value, ok := strg.InternalStorage[key]
 	if !ok {
-		return "", errors.New("got key not presented in storage")
+		log.Printf("got key %d not presented in storage", key)
+		return "", http.StatusBadRequest
 	}
-	return strg.InternalStorage[key], nil
+	if value.Deleted {
+		return "", http.StatusGone
+	}
+	return value.Value, 0
+}
+
+func (strg *Storage) MarkBatchAsDeleted(IDs []uint, userID uint) error {
+	userURLs, ok := strg.UserIDToURLID[userID]
+	if !ok {
+		return errors.New("couldn't get userURLs")
+	}
+	for _, ID := range IDs {
+		for _, userURLID := range userURLs {
+			if ID == userURLID {
+				value := strg.InternalStorage[ID]
+				value.Deleted = true
+				strg.InternalStorage[ID] = value
+			}
+		}
+	}
+	return nil
 }
 
 func (strg *Storage) InsertBatchValues(values []string, startIndex uint, userID uint) error {
@@ -173,7 +200,7 @@ func (strg *Storage) InsertBatchValues(values []string, startIndex uint, userID 
 		if ok {
 			return errors.New("got same key already in storage")
 		}
-		strg.InternalStorage[indexToInsert] = value
+		strg.InternalStorage[indexToInsert] = URL{value, false}
 		_, ok = strg.UserIDToURLID[userID]
 		if !ok {
 			strg.UserIDToURLID[userID] = make([]uint, 0)
@@ -240,14 +267,19 @@ func (strg *DBStorage) InsertValue(value string, userID uint) error {
 	return nil
 }
 
-func (strg *DBStorage) GetValueByKeyAndUserID(key uint, userID uint) (string, error) {
-	row := strg.db.QueryRow("SELECT value from url where id = $1", key)
+func (strg *DBStorage) GetValueByKeyAndUserID(key uint, userID uint) (string, int) {
+	row := strg.db.QueryRow("SELECT value, deleted from url where id = $1", key)
 	var value string
-	err := row.Scan(&value)
+	var deleted bool
+	err := row.Scan(&value, &deleted)
 	if err != nil {
-		return "", errors.New("got key not presented in storage")
+		log.Printf("got key %d not presented in storage", key)
+		return "", http.StatusBadRequest
 	}
-	return value, nil
+	if deleted {
+		return "", http.StatusGone
+	}
+	return value, 0
 }
 
 func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int) {
@@ -274,8 +306,8 @@ func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullIn
 	for _, URLID := range userURLs {
 		shortURL := CreateShortURL(URLID)
 		shortURL = baseURL + shortURL
-		originalURL, err := strg.GetValueByKeyAndUserID(URLID, userID)
-		if err != nil {
+		originalURL, errCode := strg.GetValueByKeyAndUserID(URLID, userID)
+		if errCode != 0 {
 			return nil, http.StatusInternalServerError
 		}
 		responseList = append(responseList, FullInfoURLResponse{ShortURL: shortURL, OriginalURL: originalURL})
@@ -321,6 +353,34 @@ func (strg *DBStorage) InsertBatchValues(values []string, startIndex uint, userI
 	}
 	if err := tx.Commit(); err != nil {
 		log.Fatalf("Unable to commit: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (strg *DBStorage) MarkBatchAsDeleted(IDs []uint, userID uint) error {
+	tx, err := strg.db.Begin()
+	if err != nil {
+		return err
+	}
+	log.Printf("Delete urls %v for user_id %d", IDs, userID)
+	updateStmt, err := tx.Prepare(
+		"UPDATE url SET deleted = true WHERE id IN (SELECT url_id FROM user_url where user_id = ($1) AND url_id = ANY($2::integer[]))",
+	)
+	if err != nil {
+		return err
+	}
+	defer updateStmt.Close()
+	if _, err := updateStmt.Exec(userID, IDs); err != nil {
+		if err1 := tx.Rollback(); err1 != nil {
+			log.Printf("Update stmt failed, %s", err1.Error())
+			return err1
+		}
+		log.Printf("Error %s", err.Error())
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		log.Printf("Unable to commit: %s", err.Error())
 		return err
 	}
 	return nil

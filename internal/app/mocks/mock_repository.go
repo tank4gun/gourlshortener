@@ -65,11 +65,11 @@ func (mr *MockRepositoryMockRecorder) GetNextIndex() *gomock.Call {
 }
 
 // GetValueByKeyAndUserID mocks base method.
-func (m *MockRepository) GetValueByKeyAndUserID(arg0, arg1 uint) (string, error) {
+func (m *MockRepository) GetValueByKeyAndUserID(arg0, arg1 uint) (string, int) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValueByKeyAndUserID", arg0, arg1)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(int)
 	return ret0, ret1
 }
 
@@ -105,6 +105,20 @@ func (m *MockRepository) InsertValue(arg0 string, arg1 uint) error {
 func (mr *MockRepositoryMockRecorder) InsertValue(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertValue", reflect.TypeOf((*MockRepository)(nil).InsertValue), arg0, arg1)
+}
+
+// MarkBatchAsDeleted mocks base method.
+func (m *MockRepository) MarkBatchAsDeleted(arg0 []uint, arg1 uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkBatchAsDeleted", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkBatchAsDeleted indicates an expected call of MarkBatchAsDeleted.
+func (mr *MockRepositoryMockRecorder) MarkBatchAsDeleted(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkBatchAsDeleted", reflect.TypeOf((*MockRepository)(nil).MarkBatchAsDeleted), arg0, arg1)
 }
 
 // Ping mocks base method.
