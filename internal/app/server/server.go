@@ -114,6 +114,9 @@ func CreateServer(startStorage storage.Repository) *http.Server {
 	router.Get("/ping", handlerWithStorage.PingHandler)
 	router.Post("/api/shorten/batch", handlerWithStorage.CreateShortenURLBatchHandler)
 
+	// Add handlers for pprof
+	router.Handle("/debug/pprof/*", http.DefaultServeMux)
+
 	server := &http.Server{
 		Addr:    varprs.ServerAddress,
 		Handler: router,

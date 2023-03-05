@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -155,15 +154,6 @@ func (strg *Storage) InsertValue(value string, userID uint) error {
 	return nil
 }
 
-func Contains(list []uint, value uint) error {
-	for _, v := range list {
-		if v == value {
-			return nil
-		}
-	}
-	return errors.New("No value " + strconv.Itoa(int(value)) + " in list")
-}
-
 func (strg *Storage) GetValueByKeyAndUserID(key uint, userID uint) (string, int) {
 	value, ok := strg.InternalStorage[key]
 	if !ok {
@@ -198,7 +188,7 @@ func (strg *Storage) InsertBatchValues(values []string, startIndex uint, userID 
 		indexToInsert := startIndex + uint(index)
 		_, ok := strg.InternalStorage[indexToInsert]
 		if ok {
-			return errors.New("got same key already in storage")
+			return &ExistError{indexToInsert, "Got used index"}
 		}
 		strg.InternalStorage[indexToInsert] = URL{value, false}
 		_, ok = strg.UserIDToURLID[userID]
@@ -212,6 +202,7 @@ func (strg *Storage) InsertBatchValues(values []string, startIndex uint, userID 
 				return err
 			}
 		}
+		strg.NextIndex++
 	}
 	return nil
 }

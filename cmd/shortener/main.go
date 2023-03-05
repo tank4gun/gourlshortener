@@ -6,6 +6,7 @@ import (
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"log"
+	_ "net/http/pprof"
 )
 
 func main() {
