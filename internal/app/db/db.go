@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -25,13 +24,4 @@ func RunMigrations(dbDSN string) error {
 		return err
 	}
 	return nil
-}
-
-func CreateDB(dbDSN string) (*sql.DB, error) {
-	database, err := sql.Open("pgx", dbDSN)
-	if err != nil {
-		return nil, err
-	}
-	//defer database.Close()
-	return database, nil
 }

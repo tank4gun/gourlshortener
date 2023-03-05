@@ -23,3 +23,9 @@ func TestCreateServer(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateNewID(t *testing.T) {
+	t.Run("same_size", func(t *testing.T) {
+		assert.Equal(t, len(GenerateNewID()), 4)
+	})
+}

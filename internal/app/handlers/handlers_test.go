@@ -349,3 +349,13 @@ func TestGetAllURLsHandler(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkConvertShortURLToID(b *testing.B) {
+	shortURLs := []string{"aa", "abc", "xyz", "aaaaaaaaaa"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, url := range shortURLs {
+			ConvertShortURLToID(url)
+		}
+	}
+}
