@@ -87,33 +87,45 @@ func TestStorage_InsertBatchValues(t *testing.T) {
 		{
 			"empty_storage",
 			Storage{
-				InternalStorage: map[uint]string{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			[]string{"aaaa"},
 			Storage{
-				InternalStorage: map[uint]string{1: "aaaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			nil,
 		},
 		{
 			"not_empty_storage",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			[]string{"bbbb", "cccc"},
 			Storage{
-				InternalStorage: map[uint]string{1: "aaaa", 2: "bbbb", 3: "cccc"}, UserIDToURLID: map[uint][]uint{1: {1, 2, 3}}, NextIndex: 4, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+					2: URL{"bbbb", false},
+					3: URL{"cccc", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1, 2, 3}}, NextIndex: 4, Encoder: nil, Decoder: nil,
 			},
 			nil,
 		},
 		{
 			"already_used_index",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: URL{"aaaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			[]string{"bbbb", "cccc"},
 			Storage{
-				InternalStorage: map[uint]string{1: "aaaa", 2: "bbbb", 3: "cccc"}, UserIDToURLID: map[uint][]uint{1: {1, 2, 3}}, NextIndex: 4, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+					2: URL{"bbbb", false},
+					3: URL{"cccc", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1, 2, 3}}, NextIndex: 4, Encoder: nil, Decoder: nil,
 			},
 			&ExistError{},
 		},
@@ -211,7 +223,9 @@ func TestStorage_GetAllURLsByUserID(t *testing.T) {
 		{
 			"one_url",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			1,
 			"localhost:8080/",
@@ -221,7 +235,10 @@ func TestStorage_GetAllURLsByUserID(t *testing.T) {
 		{
 			"two_urls",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaaa", 2: "bbbb"}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+					2: URL{"bbbb", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
 			},
 			1,
 			"localhost:8080/",
@@ -231,7 +248,9 @@ func TestStorage_GetAllURLsByUserID(t *testing.T) {
 		{
 			"no_user",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaaa"}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			2,
 			"localhost:8080/",
@@ -241,7 +260,10 @@ func TestStorage_GetAllURLsByUserID(t *testing.T) {
 		{
 			"no_url_for_user",
 			Storage{
-				InternalStorage: map[uint]string{1: "aaaa", 2: "bbbb"}, UserIDToURLID: map[uint][]uint{1: {3}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+					2: URL{"bbbb", false},
+				}, UserIDToURLID: map[uint][]uint{1: {3}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			1,
 			"localhost:8080/",
@@ -265,7 +287,7 @@ func TestStorage_Ping(t *testing.T) {
 	}{{
 		"just_ping_test",
 		Storage{
-			InternalStorage: map[uint]string{}, UserIDToURLID: make(map[uint][]uint), NextIndex: 1, Encoder: nil, Decoder: nil,
+			InternalStorage: map[uint]URL{}, UserIDToURLID: make(map[uint][]uint), NextIndex: 1, Encoder: nil, Decoder: nil,
 		},
 	},
 	}
