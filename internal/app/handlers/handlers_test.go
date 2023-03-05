@@ -5,17 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/go-chi/chi/v5"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"github.com/tank4gun/gourlshortener/internal/app/mocks"
-	"github.com/tank4gun/gourlshortener/internal/app/storage"
-	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/tank4gun/gourlshortener/internal/app/mocks"
+	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
 type wantResponse struct {

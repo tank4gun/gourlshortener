@@ -1,12 +1,13 @@
 package main
 
 import (
+	"log"
+	_ "net/http/pprof"
+
 	"github.com/tank4gun/gourlshortener/internal/app/db"
 	"github.com/tank4gun/gourlshortener/internal/app/server"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
-	"log"
-	_ "net/http/pprof"
 )
 
 func main() {

@@ -9,13 +9,13 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/tank4gun/gourlshortener/internal/app/handlers"
-	"github.com/tank4gun/gourlshortener/internal/app/storage"
-	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/tank4gun/gourlshortener/internal/app/handlers"
+	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
 func GenerateNewID() []byte {
