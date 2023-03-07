@@ -10,6 +10,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// RunMigrations - apply all needed migrations to the db
 func RunMigrations(dbDSN string) error {
 	if dbDSN == "" {
 		return nil
