@@ -20,6 +20,7 @@ import (
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
+// GenerateNewID - generates new ID with 4 bytes for user randomly
 func GenerateNewID() []byte {
 	newData := make([]byte, 4)
 	_, err := rand.Read(newData)
@@ -29,6 +30,7 @@ func GenerateNewID() []byte {
 	return newData
 }
 
+// ReceiveCompressed - middleware for uncompressing request body
 func ReceiveCompressed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
@@ -56,6 +58,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+// SendCompressed - middleware for compressing response body
 func SendCompressed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
@@ -70,6 +73,7 @@ func SendCompressed(next http.Handler) http.Handler {
 	})
 }
 
+// CheckAuth - middleware for checking that user is authorized
 func CheckAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := (*r).Cookie(handlers.URLShortenderCookieName)
@@ -101,6 +105,7 @@ func CheckAuth(next http.Handler) http.Handler {
 	})
 }
 
+// CreateServer - base method for creating Router and use it in http.Server
 func CreateServer(startStorage storage.Repository) *http.Server {
 	router := chi.NewRouter()
 	router.Use(ReceiveCompressed)

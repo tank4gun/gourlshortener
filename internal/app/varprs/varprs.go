@@ -5,11 +5,19 @@ import (
 	"os"
 )
 
+// FileStoragePath - path to the file storage
 var FileStoragePath string
+
+// BaseURL - base URL for shorten URLs, i.e. http://localhost:8080
 var BaseURL string
+
+// ServerAddress - address for running URLShortener app
 var ServerAddress string
+
+// DatabaseDSN - database connection address
 var DatabaseDSN string
 
+// Init - method for parsing environment variables and variables from configs
 func Init() {
 	flag.StringVar(&ServerAddress, "a", "localhost:8080", "Server address")
 	flag.StringVar(&BaseURL, "b", "http://localhost:8080", "Base URL for shorten URLs")
