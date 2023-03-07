@@ -43,11 +43,13 @@ type HandlerWithStorage struct {
 
 // URLBodyRequest is a base structure for request
 type URLBodyRequest struct {
+	// URL to shorten
 	URL string `json:"url"`
 }
 
 // ShortenURLResponse response for shorten URL creation
 type ShortenURLResponse struct {
+	// URL result
 	URL string `json:"result"`
 }
 
