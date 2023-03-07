@@ -36,8 +36,11 @@ type RequestToDelete struct {
 
 // HandlerWithStorage is used for storing all info about URLShortener service objects and handling requests.
 type HandlerWithStorage struct {
-	storage       storage.IRepository
-	baseURL       string
+	// storage - storage.IRepository implementation
+	storage storage.IRepository
+	// baseURL - base URL for shorten URLs, i.e. http://localhost:8080
+	baseURL string
+	// deleteChannel - channel for RequestToDelete object to process
 	deleteChannel chan RequestToDelete
 }
 

@@ -48,6 +48,7 @@ type ExistError struct {
 	Err string
 }
 
+// Error - implementation Error method for ExisError struct
 func (err *ExistError) Error() string {
 	return fmt.Sprintf("%s, id = %v", err.Err, err.ID)
 }
@@ -76,6 +77,7 @@ type Storage struct {
 
 // DBStorage - struct for database storage
 type DBStorage struct {
+	// db - sql.DB pointer
 	db *sql.DB
 }
 
