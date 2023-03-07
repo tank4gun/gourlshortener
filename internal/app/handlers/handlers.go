@@ -15,6 +15,7 @@ import (
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
+// userCtxName - type string
 type userCtxName string
 
 // UserIDCtxName - context key for userID
