@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"io"
 	"net/http"
 	"net/http/httptest"
+
+	"github.com/tank4gun/gourlshortener/internal/app/storage"
 )
 
 func ExampleHandlerWithStorage_CreateShortenURLFromBodyHandler() {
