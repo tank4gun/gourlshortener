@@ -36,7 +36,7 @@ type RequestToDelete struct {
 
 // HandlerWithStorage is used for storing all info about URLShortener service objects and handling requests.
 type HandlerWithStorage struct {
-	storage       storage.Repository
+	storage       storage.IRepository
 	baseURL       string
 	deleteChannel chan RequestToDelete
 }
@@ -70,7 +70,7 @@ type BatchURLResponse struct {
 }
 
 // NewHandlerWithStorage creates HandlerWithStorage object with given storage.
-func NewHandlerWithStorage(storageVal storage.Repository) *HandlerWithStorage {
+func NewHandlerWithStorage(storageVal storage.IRepository) *HandlerWithStorage {
 	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL, deleteChannel: make(chan RequestToDelete, 10)}
 }
 

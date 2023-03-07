@@ -49,11 +49,14 @@ func ReceiveCompressed(next http.Handler) http.Handler {
 	})
 }
 
+// gzipWriter - struct for using as http.ResponseWriter in middleware
 type gzipWriter struct {
 	http.ResponseWriter
+	// Writer - io.Writer
 	Writer io.Writer
 }
 
+// Write - compress given bytes with gzip
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
@@ -106,7 +109,7 @@ func CheckAuth(next http.Handler) http.Handler {
 }
 
 // CreateServer - base method for creating Router and use it in http.Server
-func CreateServer(startStorage storage.Repository) *http.Server {
+func CreateServer(startStorage storage.IRepository) *http.Server {
 	router := chi.NewRouter()
 	router.Use(ReceiveCompressed)
 	router.Use(SendCompressed)
