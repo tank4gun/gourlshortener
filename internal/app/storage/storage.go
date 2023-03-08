@@ -8,44 +8,61 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 )
 
+// FullInfoURLResponse - response object for shortened URL with original one
 type FullInfoURLResponse struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	ShortURL    string `json:"short_url"`    // ShortURL - result shorten URL
+	OriginalURL string `json:"original_url"` // OriginalURL - original URL
 }
 
+// AllPossibleChars - chars for shorten URL creation
 var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-type Repository interface {
-	InsertValue(value string, userID uint) error
-	GetValueByKeyAndUserID(key uint, userID uint) (string, int)
-	GetNextIndex() (uint, error)
-	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int)
-	InsertBatchValues(values []string, startIndex uint, userID uint) error
-	MarkBatchAsDeleted(IDs []uint, userID uint) error
-	Ping() error
+// IRepository interface for usage as storage
+type IRepository interface {
+	InsertValue(value string, userID uint) error                                 // InsertValue - insert value for userID into IRepository
+	GetValueByKeyAndUserID(key uint, userID uint) (string, int)                  // GetValueByKeyAndUserID - get value by key and userID from IRepository
+	GetNextIndex() (uint, error)                                                 // GetNextIndex - get next index for insertion into IRepository
+	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int) // GetAllURLsByUserID - get all URLs by userID from IRepository
+	InsertBatchValues(values []string, startIndex uint, userID uint) error       // InsertBatchValues - insert values batch for userID into IRepository
+	MarkBatchAsDeleted(IDs []uint, userID uint) error                            // MarkBatchAsDeleted - set deleted=true for rows by its IDs and userID in IRepository
+	Ping() error                                                                 // Ping - check that connection to IRepository is alive
 }
 
+// ExistError - error type for existing ID in Repository
+type ExistError struct {
+	ID  uint   // ID that already exists
+	Err string // Err - string for error description
+}
+
+// Error - implementation Error method for ExisError struct
+func (err *ExistError) Error() string {
+	return fmt.Sprintf("%s, id = %v", err.Err, err.ID)
+}
+
+// URL - base struct with Value and deletion mark
 type URL struct {
-	Value   string
-	Deleted bool
+	Value   string // Value - URL value
+	Deleted bool   // Deleted - true if URL is marked as deleted
 }
 
+// Storage - struct for file storage
 type Storage struct {
-	InternalStorage map[uint]URL
-	UserIDToURLID   map[uint][]uint
-	NextIndex       uint
-	Encoder         *json.Encoder
-	Decoder         *json.Decoder
+	InternalStorage map[uint]URL    // InternalStorage - URLID map to URL struct
+	UserIDToURLID   map[uint][]uint // UserIDToURLID - relationships between UserID and URLID
+	NextIndex       uint            // NextIndex - next index to insert
+	Encoder         *json.Encoder   // Encoder - object to encode URLs
+	Decoder         *json.Decoder   // Decoder - object to decode encoded URLs
 }
 
+// DBStorage - struct for database storage
 type DBStorage struct {
-	db *sql.DB
+	db *sql.DB // db - sql.DB pointer
 }
 
+// CreateShortURL - get short URL from its ID
 func CreateShortURL(currInd uint) string {
 	var sb strings.Builder
 	for {
@@ -58,11 +75,13 @@ func CreateShortURL(currInd uint) string {
 	return sb.String()
 }
 
+// MapItem - struct for Storage getting-URLs usage
 type MapItem struct {
-	Key   uint
-	Value string
+	Key   uint   // Key - key for URL
+	Value string // Value - value for URL
 }
 
+// Max - get max value from two uints
 func Max(x, y uint) uint {
 	if x < y {
 		return y
@@ -70,7 +89,8 @@ func Max(x, y uint) uint {
 	return x
 }
 
-func NewStorage(internalStorage map[uint]URL, nextInd uint, filename string, dbDSN string) (Repository, error) {
+// NewStorage - create Storage instance with given parameters
+func NewStorage(internalStorage map[uint]URL, nextInd uint, filename string, dbDSN string) (IRepository, error) {
 	if dbDSN != "" {
 		database, err := sql.Open("pgx", dbDSN)
 		if err != nil {
@@ -101,16 +121,19 @@ func NewStorage(internalStorage map[uint]URL, nextInd uint, filename string, dbD
 	}
 }
 
+// Ping - check that connection to Storage is alive
 func (strg *Storage) Ping() error {
 	return nil
 }
 
+// GetAllURLsByUserID - get all URLs by userID from Storage
 func (strg *Storage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int) {
 	userURLs, ok := strg.UserIDToURLID[userID]
 	if !ok {
 		return nil, http.StatusNoContent
 	}
 	responseList := make([]FullInfoURLResponse, 0)
+	// URLID - URL ID
 	for _, URLID := range userURLs {
 		shortURL := CreateShortURL(URLID)
 		shortURL = baseURL + shortURL
@@ -123,10 +146,12 @@ func (strg *Storage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfo
 	return responseList, 200
 }
 
+// GetNextIndex - get next index for insertion into Storage
 func (strg *Storage) GetNextIndex() (uint, error) {
 	return strg.NextIndex, nil
 }
 
+// InsertValue - insert value for userID into IRepository
 func (strg *Storage) InsertValue(value string, userID uint) error {
 	_, ok := strg.InternalStorage[strg.NextIndex]
 	if ok {
@@ -155,15 +180,7 @@ func (strg *Storage) InsertValue(value string, userID uint) error {
 	return nil
 }
 
-func Contains(list []uint, value uint) error {
-	for _, v := range list {
-		if v == value {
-			return nil
-		}
-	}
-	return errors.New("No value " + strconv.Itoa(int(value)) + " in list")
-}
-
+// GetValueByKeyAndUserID - get value by key and userID from IRepository
 func (strg *Storage) GetValueByKeyAndUserID(key uint, userID uint) (string, int) {
 	value, ok := strg.InternalStorage[key]
 	if !ok {
@@ -176,6 +193,7 @@ func (strg *Storage) GetValueByKeyAndUserID(key uint, userID uint) (string, int)
 	return value.Value, 0
 }
 
+// MarkBatchAsDeleted - set deleted=true for rows by its IDs and userID in IRepository
 func (strg *Storage) MarkBatchAsDeleted(IDs []uint, userID uint) error {
 	userURLs, ok := strg.UserIDToURLID[userID]
 	if !ok {
@@ -193,12 +211,13 @@ func (strg *Storage) MarkBatchAsDeleted(IDs []uint, userID uint) error {
 	return nil
 }
 
+// InsertBatchValues - insert values batch for userID into IRepository
 func (strg *Storage) InsertBatchValues(values []string, startIndex uint, userID uint) error {
 	for index, value := range values {
 		indexToInsert := startIndex + uint(index)
 		_, ok := strg.InternalStorage[indexToInsert]
 		if ok {
-			return errors.New("got same key already in storage")
+			return &ExistError{indexToInsert, "Got used index"}
 		}
 		strg.InternalStorage[indexToInsert] = URL{value, false}
 		_, ok = strg.UserIDToURLID[userID]
@@ -212,10 +231,12 @@ func (strg *Storage) InsertBatchValues(values []string, startIndex uint, userID 
 				return err
 			}
 		}
+		strg.NextIndex++
 	}
 	return nil
 }
 
+// GetNextIndex - get next index for insertion into DBStorage
 func (strg *DBStorage) GetNextIndex() (uint, error) {
 	row := strg.db.QueryRow("Select last_value from url_id_seq")
 	var currInd sql.NullInt64
@@ -231,16 +252,9 @@ func (strg *DBStorage) GetNextIndex() (uint, error) {
 	}
 }
 
-type ExistError struct {
-	ID  uint
-	Err string
-}
-
-func (err *ExistError) Error() string {
-	return fmt.Sprintf("%s, id = %v", err.Err, err.ID)
-}
-
+// InsertValue - insert value for userID into DBStorage
 func (strg *DBStorage) InsertValue(value string, userID uint) error {
+	// URLID - URL ID
 	var URLID uint
 	row := strg.db.QueryRow("SELECT id from url where value = $1", value)
 	err := row.Scan(&URLID)
@@ -267,6 +281,7 @@ func (strg *DBStorage) InsertValue(value string, userID uint) error {
 	return nil
 }
 
+// GetValueByKeyAndUserID - get value by key and userID from DBStorage
 func (strg *DBStorage) GetValueByKeyAndUserID(key uint, userID uint) (string, int) {
 	row := strg.db.QueryRow("SELECT value, deleted from url where id = $1", key)
 	var value string
@@ -282,6 +297,7 @@ func (strg *DBStorage) GetValueByKeyAndUserID(key uint, userID uint) (string, in
 	return value, 0
 }
 
+// GetAllURLsByUserID - get all URLs by userID from DBStorage
 func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int) {
 	userURLs := make([]uint, 0)
 	rows, err := strg.db.Query("SELECT url_id from user_url where user_id = $1", userID)
@@ -290,6 +306,7 @@ func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullIn
 	}
 	defer rows.Close()
 	for rows.Next() {
+		// URLID - URL ID
 		var URLID uint
 		err = rows.Scan(&URLID)
 		if err != nil {
@@ -303,6 +320,7 @@ func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullIn
 	}
 
 	responseList := make([]FullInfoURLResponse, 0)
+	// URLID - URL ID
 	for _, URLID := range userURLs {
 		shortURL := CreateShortURL(URLID)
 		shortURL = baseURL + shortURL
@@ -315,11 +333,13 @@ func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullIn
 	return responseList, 200
 }
 
+// Ping - check that connection to DBStorage is alive
 func (strg *DBStorage) Ping() error {
 	err := strg.db.Ping()
 	return err
 }
 
+// InsertBatchValues - insert values batch for userID into DBStorage
 func (strg *DBStorage) InsertBatchValues(values []string, startIndex uint, userID uint) error {
 	tx, err := strg.db.Begin()
 	if err != nil {
@@ -358,6 +378,7 @@ func (strg *DBStorage) InsertBatchValues(values []string, startIndex uint, userI
 	return nil
 }
 
+// MarkBatchAsDeleted - set deleted=true for rows by its IDs and userID in DBStorage
 func (strg *DBStorage) MarkBatchAsDeleted(IDs []uint, userID uint) error {
 	tx, err := strg.db.Begin()
 	if err != nil {

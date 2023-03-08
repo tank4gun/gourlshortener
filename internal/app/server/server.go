@@ -9,15 +9,18 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/tank4gun/gourlshortener/internal/app/handlers"
-	"github.com/tank4gun/gourlshortener/internal/app/storage"
-	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/tank4gun/gourlshortener/internal/app/handlers"
+	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
+// GenerateNewID - generates new ID with 4 bytes for user randomly
 func GenerateNewID() []byte {
 	newData := make([]byte, 4)
 	_, err := rand.Read(newData)
@@ -27,6 +30,7 @@ func GenerateNewID() []byte {
 	return newData
 }
 
+// ReceiveCompressed - middleware for uncompressing request body
 func ReceiveCompressed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
@@ -45,15 +49,19 @@ func ReceiveCompressed(next http.Handler) http.Handler {
 	})
 }
 
+// gzipWriter - struct for using as http.ResponseWriter in middleware
 type gzipWriter struct {
 	http.ResponseWriter
+	// Writer - io.Writer
 	Writer io.Writer
 }
 
+// Write - compress given bytes with gzip
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+// SendCompressed - middleware for compressing response body
 func SendCompressed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
@@ -68,6 +76,7 @@ func SendCompressed(next http.Handler) http.Handler {
 	})
 }
 
+// CheckAuth - middleware for checking that user is authorized
 func CheckAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := (*r).Cookie(handlers.URLShortenderCookieName)
@@ -99,7 +108,8 @@ func CheckAuth(next http.Handler) http.Handler {
 	})
 }
 
-func CreateServer(startStorage storage.Repository) *http.Server {
+// CreateServer - base method for creating Router and use it in http.Server
+func CreateServer(startStorage storage.IRepository) *http.Server {
 	router := chi.NewRouter()
 	router.Use(ReceiveCompressed)
 	router.Use(SendCompressed)
@@ -110,9 +120,12 @@ func CreateServer(startStorage storage.Repository) *http.Server {
 	router.Get("/{id}", handlerWithStorage.GetURLByIDHandler)
 	router.Post("/api/shorten", handlerWithStorage.CreateShortenURLFromBodyHandler)
 	router.Get("/api/user/urls", handlerWithStorage.GetAllURLsHandler)
-	router.Delete("/api/user/urls", handlerWithStorage.DeleteURLs)
+	router.Delete("/api/user/urls", handlerWithStorage.DeleteURLsHandler)
 	router.Get("/ping", handlerWithStorage.PingHandler)
 	router.Post("/api/shorten/batch", handlerWithStorage.CreateShortenURLBatchHandler)
+
+	// Add handlers for pprof
+	router.Handle("/debug/pprof/*", http.DefaultServeMux)
 
 	server := &http.Server{
 		Addr:    varprs.ServerAddress,

@@ -1,8 +1,10 @@
 package storage
 
 import (
-	"github.com/stretchr/testify/assert"
+	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStorage_GetValueByKeyAndUserID(t *testing.T) {
@@ -75,6 +77,73 @@ func TestStorage_InsertValue(t *testing.T) {
 	}
 }
 
+func TestStorage_InsertBatchValues(t *testing.T) {
+	tests := []struct {
+		name            string
+		startStorage    Storage
+		values          []string
+		expectedStorage Storage
+		expectedErr     error
+	}{
+		{
+			"empty_storage",
+			Storage{
+				InternalStorage: map[uint]URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
+			[]string{"aaaa"},
+			Storage{
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
+			nil,
+		},
+		{
+			"not_empty_storage",
+			Storage{
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
+			[]string{"bbbb", "cccc"},
+			Storage{
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+					2: URL{"bbbb", false},
+					3: URL{"cccc", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1, 2, 3}}, NextIndex: 4, Encoder: nil, Decoder: nil,
+			},
+			nil,
+		},
+		{
+			"already_used_index",
+			Storage{
+				InternalStorage: map[uint]URL{1: URL{"aaaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
+			[]string{"bbbb", "cccc"},
+			Storage{
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+					2: URL{"bbbb", false},
+					3: URL{"cccc", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1, 2, 3}}, NextIndex: 4, Encoder: nil, Decoder: nil,
+			},
+			&ExistError{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.startStorage.InsertBatchValues(tt.values, tt.startStorage.NextIndex, 1)
+			if tt.expectedErr == nil {
+				assert.Nil(t, err)
+				assert.Equal(t, tt.expectedStorage, tt.startStorage)
+			} else {
+				assert.NotNil(t, err)
+			}
+		})
+	}
+}
+
 func TestStorage_GetNextIndex(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -140,5 +209,98 @@ func TestMax(t *testing.T) {
 			maxResult := Max(tt.x, tt.y)
 			assert.Equal(t, tt.result, maxResult)
 		})
+	}
+}
+
+func TestStorage_GetAllURLsByUserID(t *testing.T) {
+	tests := []struct {
+		name            string
+		startStorage    Storage
+		userID          uint
+		baseURL         string
+		expectedList    []FullInfoURLResponse
+		expectedErrCode int
+	}{
+		{
+			"one_url",
+			Storage{
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
+			1,
+			"localhost:8080/",
+			[]FullInfoURLResponse{{ShortURL: "localhost:8080/b", OriginalURL: "aaaa"}},
+			http.StatusOK,
+		},
+		{
+			"two_urls",
+			Storage{
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+					2: URL{"bbbb", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
+			},
+			1,
+			"localhost:8080/",
+			[]FullInfoURLResponse{{ShortURL: "localhost:8080/b", OriginalURL: "aaaa"}, {ShortURL: "localhost:8080/c", OriginalURL: "bbbb"}},
+			http.StatusOK,
+		},
+		{
+			"no_user",
+			Storage{
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
+			2,
+			"localhost:8080/",
+			nil,
+			http.StatusNoContent,
+		},
+		{
+			"no_url_for_user",
+			Storage{
+				InternalStorage: map[uint]URL{
+					1: URL{"aaaa", false},
+					2: URL{"bbbb", false},
+				}, UserIDToURLID: map[uint][]uint{1: {3}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+			},
+			1,
+			"localhost:8080/",
+			nil,
+			http.StatusInternalServerError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response, errCode := tt.startStorage.GetAllURLsByUserID(tt.userID, tt.baseURL)
+			assert.Equal(t, tt.expectedList, response)
+			assert.Equal(t, tt.expectedErrCode, errCode)
+		})
+	}
+}
+
+func TestStorage_Ping(t *testing.T) {
+	tests := []struct {
+		name    string
+		storage Storage
+	}{{
+		"just_ping_test",
+		Storage{
+			InternalStorage: map[uint]URL{}, UserIDToURLID: make(map[uint][]uint), NextIndex: 1, Encoder: nil, Decoder: nil,
+		},
+	},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Nil(t, tt.storage.Ping())
+		})
+	}
+}
+
+func BenchmarkCreateShortURL(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		CreateShortURL(1000)
 	}
 }

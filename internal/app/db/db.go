@@ -1,14 +1,16 @@
 package db
 
 import (
-	"database/sql"
+	"log"
+
 	"github.com/golang-migrate/migrate/v4"
+
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"log"
 )
 
+// RunMigrations - apply all needed migrations to the db
 func RunMigrations(dbDSN string) error {
 	if dbDSN == "" {
 		return nil
@@ -25,13 +27,4 @@ func RunMigrations(dbDSN string) error {
 		return err
 	}
 	return nil
-}
-
-func CreateDB(dbDSN string) (*sql.DB, error) {
-	database, err := sql.Open("pgx", dbDSN)
-	if err != nil {
-		return nil, err
-	}
-	//defer database.Close()
-	return database, nil
 }

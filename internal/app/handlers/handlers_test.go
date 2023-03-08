@@ -5,17 +5,19 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/go-chi/chi/v5"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"github.com/tank4gun/gourlshortener/internal/app/mocks"
-	"github.com/tank4gun/gourlshortener/internal/app/storage"
-	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/tank4gun/gourlshortener/internal/app/mocks"
+	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
 type wantResponse struct {
@@ -259,6 +261,71 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 	}
 }
 
+func TestCreateShortenURLBatchHandler(t *testing.T) {
+	tests := []struct {
+		name            string
+		want            wantResponse
+		previousStorage storage.Storage
+		resultStorage   storage.Storage
+		requestBody     string
+	}{
+		{
+			"bad_request_body",
+			wantResponse{
+				http.StatusBadRequest,
+				"text/plain; charset=utf-8",
+				"",
+			},
+			storage.Storage{
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
+			storage.Storage{
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
+			"some_bad_input",
+		},
+		{
+			"success_case",
+			wantResponse{
+				http.StatusCreated,
+				"application/json",
+				`[{"correlation_id":"123","short_url":"http://localhost:8080/b"},{"correlation_id":"256","short_url":"http://localhost:8080/c"}]`,
+			},
+			storage.Storage{
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			},
+			storage.Storage{
+				InternalStorage: map[uint]storage.URL{1: {Value: "http://ya.ru", Deleted: false}, 2: {Value: "http://ya1.ru", Deleted: false}}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
+			},
+			`[{"correlation_id": "123", "original_url": "http://ya.ru"}, {"correlation_id": "256", "original_url": "http://ya1.ru"}]`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(
+				http.MethodPost, "/api/shorten/batch", bytes.NewReader([]byte(tt.requestBody)))
+			w := httptest.NewRecorder()
+			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			request = request.WithContext(ctx)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage).CreateShortenURLBatchHandler)
+			handler.ServeHTTP(w, request)
+			result := w.Result()
+			assert.Equal(t, tt.want.code, result.StatusCode)
+			assert.Equal(t, tt.want.headerContent, result.Header.Get("Content-Type"))
+			if tt.want.code != http.StatusCreated {
+				return
+			}
+			defer result.Body.Close()
+			responseBody, err := io.ReadAll(result.Body)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.want.responseContent, string(responseBody))
+			var responseObj []BatchURLResponse
+			err = json.Unmarshal(responseBody, &responseObj)
+			assert.Nil(t, err)
+		})
+	}
+}
+
 func TestPingHandler(t *testing.T) {
 	tt := []struct {
 		name         string
@@ -284,7 +351,7 @@ func TestPingHandler(t *testing.T) {
 			request = request.WithContext(ctx)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			repo := mocks.NewMockRepository(ctrl)
+			repo := mocks.NewMockIRepository(ctrl)
 			repo.EXPECT().Ping().Return(tc.pingResponse)
 			handler := http.HandlerFunc(NewHandlerWithStorage(repo).PingHandler)
 			handler.ServeHTTP(w, request)
@@ -335,7 +402,7 @@ func TestGetAllURLsHandler(t *testing.T) {
 			request = request.WithContext(ctx)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			repo := mocks.NewMockRepository(ctrl)
+			repo := mocks.NewMockIRepository(ctrl)
 			repo.EXPECT().GetAllURLsByUserID(tc.userID, "http://localhost:8080/").Return(tc.mockResponse, tc.mockError)
 			handler := http.HandlerFunc(NewHandlerWithStorage(repo).GetAllURLsHandler)
 			handler.ServeHTTP(w, request)
@@ -347,5 +414,56 @@ func TestGetAllURLsHandler(t *testing.T) {
 			assert.Equal(t, tc.want.headerContent, result.Header.Get("Content-Type"))
 			assert.Equal(t, tc.want.responseContent, string(responseBody))
 		})
+	}
+}
+
+func TestDeleteURLsHandler(t *testing.T) {
+	tt := []struct {
+		name         string
+		want         wantResponse
+		userID       uint
+		mockResponse []storage.FullInfoURLResponse
+		requestBody  string
+	}{
+		{
+			"success_urls",
+			wantResponse{
+				http.StatusAccepted,
+				"",
+				``,
+			},
+			1,
+			[]storage.FullInfoURLResponse{{ShortURL: "http://localhost:8080/b", OriginalURL: "http://ya.ru"}},
+			`["http://ya.ru"]`,
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader([]byte(tc.requestBody)))
+			w := httptest.NewRecorder()
+			ctx := context.WithValue(request.Context(), UserIDCtxName, tc.userID)
+			request = request.WithContext(ctx)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&storage.Storage{
+				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
+			}).DeleteURLsHandler)
+			handler.ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+			responseBody, err := io.ReadAll(result.Body)
+			assert.Nil(t, err)
+			assert.Equal(t, tc.want.code, result.StatusCode)
+			assert.Equal(t, tc.want.headerContent, result.Header.Get("Content-Type"))
+			assert.Equal(t, tc.want.responseContent, string(responseBody))
+		})
+	}
+}
+
+func BenchmarkConvertShortURLToID(b *testing.B) {
+	shortURLs := []string{"aa", "abc", "xyz", "aaaaaaaaaa"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, url := range shortURLs {
+			ConvertShortURLToID(url)
+		}
 	}
 }
