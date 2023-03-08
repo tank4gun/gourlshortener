@@ -133,6 +133,7 @@ func (strg *Storage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfo
 		return nil, http.StatusNoContent
 	}
 	responseList := make([]FullInfoURLResponse, 0)
+	// URLID - URL ID
 	for _, URLID := range userURLs {
 		shortURL := CreateShortURL(URLID)
 		shortURL = baseURL + shortURL
@@ -253,7 +254,8 @@ func (strg *DBStorage) GetNextIndex() (uint, error) {
 
 // InsertValue - insert value for userID into DBStorage
 func (strg *DBStorage) InsertValue(value string, userID uint) error {
-	var URLID uint // URLID - URL ID
+	// URLID - URL ID
+	var URLID uint
 	row := strg.db.QueryRow("SELECT id from url where value = $1", value)
 	err := row.Scan(&URLID)
 	if err != nil && err != sql.ErrNoRows {
@@ -304,7 +306,8 @@ func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullIn
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var URLID uint // URLID - URL ID
+		// URLID - URL ID
+		var URLID uint
 		err = rows.Scan(&URLID)
 		if err != nil {
 			return nil, http.StatusNoContent
@@ -317,6 +320,7 @@ func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullIn
 	}
 
 	responseList := make([]FullInfoURLResponse, 0)
+	// URLID - URL ID
 	for _, URLID := range userURLs {
 		shortURL := CreateShortURL(URLID)
 		shortURL = baseURL + shortURL
