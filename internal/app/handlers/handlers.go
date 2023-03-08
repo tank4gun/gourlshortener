@@ -298,8 +298,8 @@ func (strg *HandlerWithStorage) PingHandler(w http.ResponseWriter, r *http.Reque
 	w.Write(empty)
 }
 
-// DeleteURLs removes all URLs for given User
-func (strg *HandlerWithStorage) DeleteURLs(w http.ResponseWriter, r *http.Request) {
+// DeleteURLsHandler removes all URLs for given User
+func (strg *HandlerWithStorage) DeleteURLsHandler(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(UserIDCtxName).(uint)
 	defer r.Body.Close()
 	jsonBody, err := io.ReadAll(r.Body)
