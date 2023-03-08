@@ -12,40 +12,29 @@ import (
 )
 
 // FullInfoURLResponse - response object for shortened URL with original one
-// ShortURL - result shorten URL
-// OriginalURL - original URL
 type FullInfoURLResponse struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	ShortURL    string `json:"short_url"`    // ShortURL - result shorten URL
+	OriginalURL string `json:"original_url"` // OriginalURL - original URL
 }
 
 // AllPossibleChars - chars for shorten URL creation
 var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 // IRepository interface for usage as storage
-// InsertValue - insert value for userID into IRepository
-// GetValueByKeyAndUserID - get value by key and userID from IRepository
-// GetNextIndex - get next index for insertion into IRepository
-// GetAllURLsByUserID - get all URLs by userID from IRepository
-// InsertBatchValues - insert values batch for userID into IRepository
-// MarkBatchAsDeleted - set deleted=true for rows by its IDs and userID in IRepository
-// Ping - check that connection to IRepository is alive
 type IRepository interface {
-	InsertValue(value string, userID uint) error
-	GetValueByKeyAndUserID(key uint, userID uint) (string, int)
-	GetNextIndex() (uint, error)
-	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int)
-	InsertBatchValues(values []string, startIndex uint, userID uint) error
-	MarkBatchAsDeleted(IDs []uint, userID uint) error
-	Ping() error
+	InsertValue(value string, userID uint) error                                 // InsertValue - insert value for userID into IRepository
+	GetValueByKeyAndUserID(key uint, userID uint) (string, int)                  // GetValueByKeyAndUserID - get value by key and userID from IRepository
+	GetNextIndex() (uint, error)                                                 // GetNextIndex - get next index for insertion into IRepository
+	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int) // GetAllURLsByUserID - get all URLs by userID from IRepository
+	InsertBatchValues(values []string, startIndex uint, userID uint) error       // InsertBatchValues - insert values batch for userID into IRepository
+	MarkBatchAsDeleted(IDs []uint, userID uint) error                            // MarkBatchAsDeleted - set deleted=true for rows by its IDs and userID in IRepository
+	Ping() error                                                                 // Ping - check that connection to IRepository is alive
 }
 
 // ExistError - error type for existing ID in Repository
-// ID that already exists
-// Err - string for error description
 type ExistError struct {
-	ID  uint
-	Err string
+	ID  uint   // ID that already exists
+	Err string // Err - string for error description
 }
 
 // Error - implementation Error method for ExisError struct
@@ -54,31 +43,23 @@ func (err *ExistError) Error() string {
 }
 
 // URL - base struct with Value and deletion mark
-// Value - URL value
-// Deleted - true if URL is marked as deleted
 type URL struct {
-	Value   string
-	Deleted bool
+	Value   string // Value - URL value
+	Deleted bool   // Deleted - true if URL is marked as deleted
 }
 
 // Storage - struct for file storage
-// InternalStorage - URLID map to URL struct
-// UserIDToURLID - relationships between UserID and URLID
-// NextIndex - next index to insert
-// Encoder - object to encode URLs
-// Decoder - object to decode encoded URLs
 type Storage struct {
-	InternalStorage map[uint]URL
-	UserIDToURLID   map[uint][]uint
-	NextIndex       uint
-	Encoder         *json.Encoder
-	Decoder         *json.Decoder
+	InternalStorage map[uint]URL    // InternalStorage - URLID map to URL struct
+	UserIDToURLID   map[uint][]uint // UserIDToURLID - relationships between UserID and URLID
+	NextIndex       uint            // NextIndex - next index to insert
+	Encoder         *json.Encoder   // Encoder - object to encode URLs
+	Decoder         *json.Decoder   // Decoder - object to decode encoded URLs
 }
 
 // DBStorage - struct for database storage
-// db - sql.DB pointer
 type DBStorage struct {
-	db *sql.DB
+	db *sql.DB // db - sql.DB pointer
 }
 
 // CreateShortURL - get short URL from its ID
@@ -95,11 +76,9 @@ func CreateShortURL(currInd uint) string {
 }
 
 // MapItem - struct for Storage getting-URLs usage
-// Key - key for URL
-// Value - value for URL
 type MapItem struct {
-	Key   uint
-	Value string
+	Key   uint   // Key - key for URL
+	Value string // Value - value for URL
 }
 
 // Max - get max value from two uints
@@ -274,6 +253,7 @@ func (strg *DBStorage) GetNextIndex() (uint, error) {
 
 // InsertValue - insert value for userID into DBStorage
 func (strg *DBStorage) InsertValue(value string, userID uint) error {
+	// URLID - URL ID
 	var URLID uint
 	row := strg.db.QueryRow("SELECT id from url where value = $1", value)
 	err := row.Scan(&URLID)
