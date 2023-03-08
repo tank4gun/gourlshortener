@@ -29,10 +29,8 @@ var URLShortenderCookieName = "URL-Shortener"
 
 // RequestToDelete - message type for URL deletion
 type RequestToDelete struct {
-	// URLs - list with URLs to delete
-	URLs []string
-	// UserID - user ID for URLs to delete
-	UserID uint
+	URLs   []string // URLs - list with URLs to delete
+	UserID uint     // UserID - user ID for URLs to delete
 }
 
 // HandlerWithStorage is used for storing all info about URLShortener service objects and handling requests.
@@ -309,6 +307,7 @@ func (strg *HandlerWithStorage) DeleteURLs(w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// URLsToDelete - list with URLs to delete
 	var URLsToDelete []string
 	err = json.Unmarshal(jsonBody, &URLsToDelete)
 	if err != nil {

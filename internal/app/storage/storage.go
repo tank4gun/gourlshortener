@@ -253,8 +253,7 @@ func (strg *DBStorage) GetNextIndex() (uint, error) {
 
 // InsertValue - insert value for userID into DBStorage
 func (strg *DBStorage) InsertValue(value string, userID uint) error {
-	// URLID - URL ID
-	var URLID uint
+	var URLID uint // URLID - URL ID
 	row := strg.db.QueryRow("SELECT id from url where value = $1", value)
 	err := row.Scan(&URLID)
 	if err != nil && err != sql.ErrNoRows {
@@ -305,7 +304,7 @@ func (strg *DBStorage) GetAllURLsByUserID(userID uint, baseURL string) ([]FullIn
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var URLID uint
+		var URLID uint // URLID - URL ID
 		err = rows.Scan(&URLID)
 		if err != nil {
 			return nil, http.StatusNoContent
