@@ -2,6 +2,8 @@ package main
 
 import (
 	"go/ast"
+	"strings"
+
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/bools"
@@ -14,7 +16,6 @@ import (
 	"golang.org/x/tools/go/analysis/passes/structtag"
 	"golang.org/x/tools/go/analysis/passes/unreachable"
 	"honnef.co/go/tools/staticcheck"
-	"strings"
 )
 
 // NoExitAnalyzer - analyzer for os.Exit() calls in main package
