@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log"
+	_ "net/http/pprof"
+
 	"github.com/tank4gun/gourlshortener/internal/app/db"
 	"github.com/tank4gun/gourlshortener/internal/app/server"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
-	"log"
-	_ "net/http/pprof"
 )
 
 // Use command `go run -ldflags "-X main.buildVersion=1.1.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X main.buildCommit=123" shortener/main.go`
