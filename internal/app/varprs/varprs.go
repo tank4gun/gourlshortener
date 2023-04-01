@@ -17,12 +17,16 @@ var ServerAddress string
 // DatabaseDSN - database connection address
 var DatabaseDSN string
 
+// UseHTTPS - flag for HTTPS enabling
+var UseHTTPS bool
+
 // Init - method for parsing environment variables and variables from configs
 func Init() {
 	flag.StringVar(&ServerAddress, "a", "localhost:8080", "Server address")
 	flag.StringVar(&BaseURL, "b", "http://localhost:8080", "Base URL for shorten URLs")
 	flag.StringVar(&FileStoragePath, "f", "storage.txt", "File path for storage")
 	flag.StringVar(&DatabaseDSN, "d", "", "Database connection address")
+	flag.BoolVar(&UseHTTPS, "s", false, "Use HTTPS for server")
 	flag.Parse()
 
 	fileStoragePathEnv := os.Getenv("FILE_STORAGE_PATH")
@@ -52,5 +56,10 @@ func Init() {
 	databaseDSNEnv := os.Getenv("DATABASE_DSN")
 	if databaseDSNEnv != "" {
 		DatabaseDSN = databaseDSNEnv
+	}
+
+	useHTTPS := os.Getenv("ENABLE_HTTPS")
+	if useHTTPS != "" {
+		UseHTTPS = true
 	}
 }

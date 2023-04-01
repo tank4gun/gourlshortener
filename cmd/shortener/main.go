@@ -36,5 +36,9 @@ func main() {
 	nextIndex := uint(1)
 	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath, varprs.DatabaseDSN)
 	currentServer := server.CreateServer(strg)
-	log.Fatal(currentServer.ListenAndServe())
+	if varprs.UseHTTPS {
+		log.Fatal(currentServer.ListenAndServeTLS("internal/app/varprs/localhost.crt", "internal/app/varprs/localhost.key"))
+	} else {
+		log.Fatal(currentServer.ListenAndServe())
+	}
 }
