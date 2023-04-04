@@ -30,7 +30,7 @@ type ConfigStruct struct {
 	BaseURL         string `json:"base_url"`          // BaseURL - base route for URLs
 	FileStoragePath string `json:"file_storage_path"` // FileStoragePath - path to file with data in case no db storage allowed
 	DatabaseDSN     string `json:"database_dsn"`      // DatabaseDSN - connection string to database
-	EnableHttps     bool   `json:"enable_https"`      // EnableHttps - flag in order to enable https
+	EnableHTTPS     bool   `json:"enable_https"`      // EnableHttps - flag in order to enable https
 }
 
 func ParseConfigFile() ConfigStruct {
@@ -110,7 +110,7 @@ func Init() {
 	if useHTTPS != "" {
 		UseHTTPS = true
 	}
-	if UseHTTPS == false {
-		UseHTTPS = config.EnableHttps
+	if !UseHTTPS {
+		UseHTTPS = config.EnableHTTPS
 	}
 }
