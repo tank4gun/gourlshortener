@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/tank4gun/gourlshortener/internal/app/db"
 	"github.com/tank4gun/gourlshortener/internal/app/server"
@@ -36,9 +41,31 @@ func main() {
 	nextIndex := uint(1)
 	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath, varprs.DatabaseDSN)
 	currentServer := server.CreateServer(strg)
+
+	sigChan := make(chan os.Signal, 1)
+	serverStoppedChan := make(chan struct{})
+	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	go func() {
+		<-sigChan
+		if err := currentServer.Shutdown(context.Background()); err != nil {
+			log.Fatalf("Err while Shutdown, %v", err)
+		}
+		close(serverStoppedChan)
+	}()
+
 	if varprs.UseHTTPS {
-		log.Fatal(currentServer.ListenAndServeTLS("internal/app/varprs/localhost.crt", "internal/app/varprs/localhost.key"))
+		if err := currentServer.ListenAndServeTLS("internal/app/varprs/localhost.crt", "internal/app/varprs/localhost.key"); err != nil {
+			log.Fatalf("Err while ListenAndServeTLS, %v", err)
+		}
 	} else {
-		log.Fatal(currentServer.ListenAndServe())
+		if err := currentServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Err while ListenAndServe, %v", err)
+		}
 	}
+	<-serverStoppedChan
+	if err := strg.Shutdown(); err != nil {
+		log.Fatalf("Err while Storage Shutdown, %v", err)
+	}
+	log.Println("Server was shutdowned")
 }
