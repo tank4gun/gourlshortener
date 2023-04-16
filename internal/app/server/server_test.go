@@ -1,11 +1,11 @@
 package server
 
 import (
-	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 )
 
