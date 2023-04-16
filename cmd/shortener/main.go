@@ -3,17 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/tank4gun/gourlshortener/internal/app/db"
-	"github.com/tank4gun/gourlshortener/internal/app/handlers"
-	"github.com/tank4gun/gourlshortener/internal/app/server"
-	"github.com/tank4gun/gourlshortener/internal/app/storage"
-	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/tank4gun/gourlshortener/internal/app/db"
+	"github.com/tank4gun/gourlshortener/internal/app/handlers"
+	"github.com/tank4gun/gourlshortener/internal/app/server"
+	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
 // Use command `go run -ldflags "-X main.buildVersion=1.1.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X main.buildCommit=123" shortener/main.go`
@@ -54,6 +55,7 @@ func main() {
 		if err := currentServer.Shutdown(context.Background()); err != nil {
 			log.Fatalf("Err while Shutdown, %v", err)
 		}
+		close(serverStoppedChan)
 		//defer cancel()
 	}()
 
