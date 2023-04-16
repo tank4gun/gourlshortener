@@ -49,7 +49,7 @@ func main() {
 
 	go func() {
 		<-sigChan
-		close(deleteChannel)
+		//close(deleteChannel)
 		//ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		if err := currentServer.Shutdown(context.Background()); err != nil {
 			log.Fatalf("Err while Shutdown, %v", err)
