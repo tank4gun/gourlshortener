@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ func TestCreateServer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			createdServer := CreateServer(&tt.startStorage)
+			createdServer := CreateServer(&tt.startStorage, make(chan handlers.RequestToDelete, 10))
 			assert.NotNil(t, createdServer)
 		})
 	}

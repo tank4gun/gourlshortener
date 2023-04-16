@@ -72,8 +72,8 @@ type BatchURLResponse struct {
 }
 
 // NewHandlerWithStorage creates HandlerWithStorage object with given storage.
-func NewHandlerWithStorage(storageVal storage.IRepository) *HandlerWithStorage {
-	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL, deleteChannel: make(chan RequestToDelete, 10)}
+func NewHandlerWithStorage(storageVal storage.IRepository, deleteChannel chan RequestToDelete) *HandlerWithStorage {
+	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL, deleteChannel: deleteChannel}
 }
 
 // ConvertShortURLBatchToIDs converts shorten URLs to list with IDs

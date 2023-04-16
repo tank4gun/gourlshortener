@@ -21,7 +21,7 @@ func ExampleHandlerWithStorage_CreateShortenURLFromBodyHandler() {
 	handler := http.HandlerFunc(NewHandlerWithStorage(&storage.Storage{
 		InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{},
 		NextIndex: 1, Encoder: nil, Decoder: nil,
-	}).CreateShortenURLFromBodyHandler)
+	}, make(chan RequestToDelete, 10)).CreateShortenURLFromBodyHandler)
 	handler.ServeHTTP(w, request)
 	result := w.Result()
 	fmt.Println(result.StatusCode)
@@ -43,7 +43,7 @@ func ExampleHandlerWithStorage_CreateShortURLHandler() {
 	request = request.WithContext(ctx)
 	handler := http.HandlerFunc(NewHandlerWithStorage(&storage.Storage{
 		InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
-	}).CreateShortURLHandler)
+	}, make(chan RequestToDelete, 10)).CreateShortURLHandler)
 	handler.ServeHTTP(w, request)
 	result := w.Result()
 	fmt.Println(result.StatusCode)

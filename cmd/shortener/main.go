@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/tank4gun/gourlshortener/internal/app/db"
 	"github.com/tank4gun/gourlshortener/internal/app/server"
@@ -40,7 +42,8 @@ func main() {
 	internalStorage := map[uint]storage.URL{}
 	nextIndex := uint(1)
 	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath, varprs.DatabaseDSN)
-	currentServer := server.CreateServer(strg)
+	deleteChannel := make(chan handlers.RequestToDelete, 10)
+	currentServer := server.CreateServer(strg, deleteChannel)
 
 	sigChan := make(chan os.Signal, 1)
 	serverStoppedChan := make(chan struct{})
@@ -48,10 +51,11 @@ func main() {
 
 	go func() {
 		<-sigChan
-		if err := currentServer.Shutdown(context.Background()); err != nil {
+		ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+		if err := currentServer.Shutdown(ctx); err != nil {
 			log.Fatalf("Err while Shutdown, %v", err)
 		}
-		close(serverStoppedChan)
+		close(deleteChannel)
 	}()
 
 	if varprs.UseHTTPS {
