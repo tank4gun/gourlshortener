@@ -106,6 +106,7 @@ func (strg *HandlerWithStorage) DeleteURLsDaemon() {
 		log.Printf("Got URLIDs %v", URLIDs)
 		_ = strg.storage.MarkBatchAsDeleted(URLIDs, reqToDelete.UserID)
 	}
+	close(strg.deleteChannel)
 }
 
 // CreateShortURLByURL creates short URL by given URL and inserts it into storage.

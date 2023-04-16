@@ -50,7 +50,6 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 	go func() {
-		close(deleteChannel)
 		<-sigChan
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		if err := currentServer.Shutdown(ctx); err != nil {
