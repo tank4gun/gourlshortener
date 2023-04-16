@@ -3,19 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/tank4gun/gourlshortener/internal/app/db"
 	"github.com/tank4gun/gourlshortener/internal/app/handlers"
+	"github.com/tank4gun/gourlshortener/internal/app/server"
+	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
-
-	"github.com/tank4gun/gourlshortener/internal/app/db"
-	"github.com/tank4gun/gourlshortener/internal/app/server"
-	"github.com/tank4gun/gourlshortener/internal/app/storage"
-	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
 // Use command `go run -ldflags "-X main.buildVersion=1.1.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X main.buildCommit=123" shortener/main.go`
@@ -51,11 +49,12 @@ func main() {
 
 	go func() {
 		<-sigChan
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-		if err := currentServer.Shutdown(ctx); err != nil {
+		close(deleteChannel)
+		//ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		if err := currentServer.Shutdown(context.Background()); err != nil {
 			log.Fatalf("Err while Shutdown, %v", err)
 		}
-		defer cancel()
+		//defer cancel()
 	}()
 
 	if varprs.UseHTTPS {
