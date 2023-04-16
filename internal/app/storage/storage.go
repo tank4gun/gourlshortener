@@ -29,6 +29,7 @@ type IRepository interface {
 	InsertBatchValues(values []string, startIndex uint, userID uint) error       // InsertBatchValues - insert values batch for userID into IRepository
 	MarkBatchAsDeleted(IDs []uint, userID uint) error                            // MarkBatchAsDeleted - set deleted=true for rows by its IDs and userID in IRepository
 	Ping() error                                                                 // Ping - check that connection to IRepository is alive
+	Shutdown() error                                                             // Shutdown - gracefully shotdown IRepository
 }
 
 // ExistError - error type for existing ID in Repository
@@ -60,6 +61,16 @@ type Storage struct {
 // DBStorage - struct for database storage
 type DBStorage struct {
 	db *sql.DB // db - sql.DB pointer
+}
+
+// Shutdown - close db connection for DBStorage
+func (strg *DBStorage) Shutdown() error {
+	return strg.db.Close()
+}
+
+// Shutdown - in case Storage do nothing
+func (strg *Storage) Shutdown() error {
+	return nil
 }
 
 // CreateShortURL - get short URL from its ID

@@ -109,12 +109,12 @@ func CheckAuth(next http.Handler) http.Handler {
 }
 
 // CreateServer - base method for creating Router and use it in http.Server
-func CreateServer(startStorage storage.IRepository) *http.Server {
+func CreateServer(startStorage storage.IRepository, deleteChannel chan handlers.RequestToDelete) *http.Server {
 	router := chi.NewRouter()
 	router.Use(ReceiveCompressed)
 	router.Use(SendCompressed)
 	router.Use(CheckAuth)
-	handlerWithStorage := handlers.NewHandlerWithStorage(startStorage)
+	handlerWithStorage := handlers.NewHandlerWithStorage(startStorage, deleteChannel)
 	go handlerWithStorage.DeleteURLsDaemon()
 	router.Post("/", handlerWithStorage.CreateShortURLHandler)
 	router.Get("/{id}", handlerWithStorage.GetURLByIDHandler)
