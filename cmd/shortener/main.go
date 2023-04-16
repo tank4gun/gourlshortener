@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/tank4gun/gourlshortener/internal/app/db"
 	"github.com/tank4gun/gourlshortener/internal/app/handlers"
@@ -50,13 +51,13 @@ func main() {
 
 	go func() {
 		<-sigChan
-		//close(deleteChannel)
-		//ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-		if err := currentServer.Shutdown(context.Background()); err != nil {
+		close(deleteChannel)
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		if err := currentServer.Shutdown(ctx); err != nil {
 			log.Fatalf("Err while Shutdown, %v", err)
 		}
 		close(serverStoppedChan)
-		//defer cancel()
+		defer cancel()
 	}()
 
 	if varprs.UseHTTPS {
