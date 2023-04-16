@@ -51,7 +51,7 @@ func main() {
 
 	go func() {
 		<-sigChan
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		if err := currentServer.Shutdown(ctx); err != nil {
 			log.Fatalf("Err while Shutdown, %v", err)
 		}
