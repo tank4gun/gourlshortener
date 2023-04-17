@@ -17,6 +17,12 @@ type FullInfoURLResponse struct {
 	OriginalURL string `json:"original_url"` // OriginalURL - original URL
 }
 
+// StatsResponse - response object for GetStatsHandler method
+type StatsResponse struct {
+	URLs  int `json:"urls"`  // URLs - total URLs amount in database
+	Users int `json:"users"` // Users - total users amount in database
+}
+
 // AllPossibleChars - chars for shorten URL creation
 var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -28,6 +34,7 @@ type IRepository interface {
 	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int) // GetAllURLsByUserID - get all URLs by userID from IRepository
 	InsertBatchValues(values []string, startIndex uint, userID uint) error       // InsertBatchValues - insert values batch for userID into IRepository
 	MarkBatchAsDeleted(IDs []uint, userID uint) error                            // MarkBatchAsDeleted - set deleted=true for rows by its IDs and userID in IRepository
+	GetStats() (response StatsResponse, errCode int)                             // GetStats - get stats from database
 	Ping() error                                                                 // Ping - check that connection to IRepository is alive
 	Shutdown() error                                                             // Shutdown - gracefully shotdown IRepository
 }
@@ -247,6 +254,13 @@ func (strg *Storage) InsertBatchValues(values []string, startIndex uint, userID 
 	return nil
 }
 
+// GetStats - get stats from database
+func (strg *Storage) GetStats() (response StatsResponse, errCode int) {
+	URLsCount := int(strg.NextIndex) - 1
+	UsersCount := len(strg.UserIDToURLID)
+	return StatsResponse{URLs: URLsCount, Users: UsersCount}, 200
+}
+
 // GetNextIndex - get next index for insertion into DBStorage
 func (strg *DBStorage) GetNextIndex() (uint, error) {
 	row := strg.db.QueryRow("Select last_value from url_id_seq")
@@ -416,4 +430,23 @@ func (strg *DBStorage) MarkBatchAsDeleted(IDs []uint, userID uint) error {
 		return err
 	}
 	return nil
+}
+
+// GetStats - get stats from database
+func (strg *DBStorage) GetStats() (response StatsResponse, errCode int) {
+	row := strg.db.QueryRow("SELECT count(*) from url where deleted = false")
+	var URLsCount int
+	var UsersCount int
+	err := row.Scan(&URLsCount)
+	if err != nil {
+		log.Print("Couldn't get URLs count")
+		return StatsResponse{}, http.StatusBadRequest
+	}
+	row = strg.db.QueryRow("SELECT count(distinct user_id) from user_url")
+	err = row.Scan(&UsersCount)
+	if err != nil {
+		log.Print("Couldn't get Users count")
+		return StatsResponse{}, http.StatusBadRequest
+	}
+	return StatsResponse{URLs: URLsCount, Users: UsersCount}, 200
 }

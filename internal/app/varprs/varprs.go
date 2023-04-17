@@ -24,6 +24,9 @@ var UseHTTPS bool
 // ConfigPath - path to config with environment variables
 var ConfigPath string
 
+// TrustedSubnet - subnet mask
+var TrustedSubnet string
+
 // ConfigStruct - struct to parse config file
 type ConfigStruct struct {
 	ServerAddress   string `json:"server_address"`    // ServerAddress - server address for urlshortener app
@@ -31,6 +34,7 @@ type ConfigStruct struct {
 	FileStoragePath string `json:"file_storage_path"` // FileStoragePath - path to file with data in case no db storage allowed
 	DatabaseDSN     string `json:"database_dsn"`      // DatabaseDSN - connection string to database
 	EnableHTTPS     bool   `json:"enable_https"`      // EnableHTTPS - flag in order to enable https
+	TrustedSubnet   string `json:"trusted_subnet"`    // TrustedSubnet - flag for trusted subnet for handle GET /api/internal/stats
 }
 
 // ParseConfigFile - function got parsing conflict file
@@ -46,12 +50,12 @@ func ParseConfigFile() ConfigStruct {
 	if err != nil {
 		return ConfigStruct{}
 	}
-	var parsedConfig ConfigStruct
+	parsedConfig := ParseConfigFile
 	err = json.Unmarshal(bytes, &parsedConfig)
 	if err != nil {
 		return ConfigStruct{}
 	}
-	return parsedConfig
+	return parsedConfig()
 }
 
 // Init - method for parsing environment variables and variables from configs
@@ -63,6 +67,7 @@ func Init() {
 	flag.BoolVar(&UseHTTPS, "s", false, "Use HTTPS for server")
 	flag.StringVar(&ConfigPath, "config", "", "Config file path")
 	flag.StringVar(&ConfigPath, "c", "", "Config file path")
+	flag.StringVar(&TrustedSubnet, "t", "192.168.1.1/24", "Subnet mask")
 	flag.Parse()
 
 	config := ParseConfigFile()
@@ -113,5 +118,12 @@ func Init() {
 	}
 	if !UseHTTPS {
 		UseHTTPS = config.EnableHTTPS
+	}
+	trustedSubnet := os.Getenv("TRUSTED_SUBNET")
+	if trustedSubnet != "" {
+		TrustedSubnet = trustedSubnet
+	}
+	if TrustedSubnet == "" {
+		TrustedSubnet = config.TrustedSubnet
 	}
 }

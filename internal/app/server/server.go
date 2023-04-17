@@ -123,6 +123,7 @@ func CreateServer(startStorage storage.IRepository, deleteChannel chan handlers.
 	router.Delete("/api/user/urls", handlerWithStorage.DeleteURLsHandler)
 	router.Get("/ping", handlerWithStorage.PingHandler)
 	router.Post("/api/shorten/batch", handlerWithStorage.CreateShortenURLBatchHandler)
+	router.Get("/api/internal/stats", handlerWithStorage.GetStatsHandler)
 
 	// Add handlers for pprof
 	router.Handle("/debug/pprof/*", http.DefaultServeMux)

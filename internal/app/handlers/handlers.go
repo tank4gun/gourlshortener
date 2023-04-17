@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"net"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -275,6 +276,42 @@ func (strg *HandlerWithStorage) GetAllURLsHandler(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusOK)
 	if responseMarshalled, err := json.Marshal(responseList); err == nil {
 		_, err = w.Write(responseMarshalled)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+// GetStatsHandler return all URLs and Users number
+func (strg *HandlerWithStorage) GetStatsHandler(w http.ResponseWriter, r *http.Request) {
+	ipStr := r.Header.Get("X-Real-IP")
+	requestIp := net.ParseIP(ipStr)
+	if requestIp == nil {
+		http.Error(w, "Got bad IP address", http.StatusForbidden)
+		return
+	}
+	_, ipNet, err := net.ParseCIDR(varprs.TrustedSubnet)
+	if err != nil {
+		http.Error(w, "Couldn't parse ipMask", http.StatusInternalServerError)
+		return
+	}
+	if !ipNet.Contains(requestIp) {
+		http.Error(w, "Got bad IP address", http.StatusForbidden)
+		return
+	}
+	stats, errCode := strg.storage.GetStats()
+	if errCode != http.StatusOK {
+		w.WriteHeader(errCode)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if statsMarshalled, err := json.Marshal(stats); err == nil {
+		_, err = w.Write(statsMarshalled)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
