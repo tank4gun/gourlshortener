@@ -289,8 +289,8 @@ func (strg *HandlerWithStorage) GetAllURLsHandler(w http.ResponseWriter, r *http
 // GetStatsHandler return all URLs and Users number
 func (strg *HandlerWithStorage) GetStatsHandler(w http.ResponseWriter, r *http.Request) {
 	ipStr := r.Header.Get("X-Real-IP")
-	requestIp := net.ParseIP(ipStr)
-	if requestIp == nil {
+	requestIP := net.ParseIP(ipStr)
+	if requestIP == nil {
 		http.Error(w, "Got bad IP address", http.StatusForbidden)
 		return
 	}
@@ -299,7 +299,7 @@ func (strg *HandlerWithStorage) GetStatsHandler(w http.ResponseWriter, r *http.R
 		http.Error(w, "Couldn't parse ipMask", http.StatusInternalServerError)
 		return
 	}
-	if !ipNet.Contains(requestIp) {
+	if !ipNet.Contains(requestIP) {
 		http.Error(w, "Got bad IP address", http.StatusForbidden)
 		return
 	}
