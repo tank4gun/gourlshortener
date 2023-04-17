@@ -256,7 +256,9 @@ func (strg *Storage) InsertBatchValues(values []string, startIndex uint, userID 
 
 // GetStats - get stats from database
 func (strg *Storage) GetStats() (response StatsResponse, errCode int) {
+	// URLsCount - number of URLs in Storage
 	URLsCount := int(strg.NextIndex) - 1
+	// UsersCount - number of users in Storage
 	UsersCount := len(strg.UserIDToURLID)
 	return StatsResponse{URLs: URLsCount, Users: UsersCount}, 200
 }
@@ -435,7 +437,9 @@ func (strg *DBStorage) MarkBatchAsDeleted(IDs []uint, userID uint) error {
 // GetStats - get stats from database
 func (strg *DBStorage) GetStats() (response StatsResponse, errCode int) {
 	row := strg.db.QueryRow("SELECT count(*) from url where deleted = false")
+	// URLsCount - number of URLs in DBStorage
 	var URLsCount int
+	// UsersCount - number of URLs in DBStorage
 	var UsersCount int
 	err := row.Scan(&URLsCount)
 	if err != nil {
