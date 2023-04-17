@@ -64,6 +64,21 @@ func (mr *MockIRepositoryMockRecorder) GetNextIndex() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNextIndex", reflect.TypeOf((*MockIRepository)(nil).GetNextIndex))
 }
 
+// GetStats mocks base method.
+func (m *MockIRepository) GetStats() (storage.StatsResponse, int) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStats")
+	ret0, _ := ret[0].(storage.StatsResponse)
+	ret1, _ := ret[1].(int)
+	return ret0, ret1
+}
+
+// GetStats indicates an expected call of GetStats.
+func (mr *MockIRepositoryMockRecorder) GetStats() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStats", reflect.TypeOf((*MockIRepository)(nil).GetStats))
+}
+
 // GetValueByKeyAndUserID mocks base method.
 func (m *MockIRepository) GetValueByKeyAndUserID(arg0, arg1 uint) (string, int) {
 	m.ctrl.T.Helper()
