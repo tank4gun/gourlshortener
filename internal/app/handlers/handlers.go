@@ -3,7 +3,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"log"
 	"math"
@@ -56,22 +55,6 @@ type ShortenURLResponse struct {
 	URL string `json:"result"`
 }
 
-// BatchURLRequest request type for batch URLs
-type BatchURLRequest struct {
-	// CorrelationID - ID for original-shorten URL match
-	CorrelationID string `json:"correlation_id"`
-	// OriginalURL - URL to shorten
-	OriginalURL string `json:"original_url"`
-}
-
-// BatchURLResponse response type for batch URLs
-type BatchURLResponse struct {
-	// CorrelationID - ID for original-shorten URL match
-	CorrelationID string `json:"correlation_id"`
-	// ShortURL - result shorten URL
-	ShortURL string `json:"short_url"`
-}
-
 // NewHandlerWithStorage creates HandlerWithStorage object with given storage.
 func NewHandlerWithStorage(storageVal storage.IRepository, deleteChannel chan RequestToDelete) *HandlerWithStorage {
 	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL, deleteChannel: deleteChannel}
@@ -109,42 +92,23 @@ func (strg *HandlerWithStorage) DeleteURLsDaemon() {
 	}
 }
 
-// CreateShortURLByURL creates short URL by given URL and inserts it into storage.
-func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (shortURLResult string, errMsg string, errCode int) {
-	currInd, indErr := strg.storage.GetNextIndex()
-	if indErr != nil {
-		return "", "Bad next index", http.StatusInternalServerError
-	}
-	strgErr := strg.storage.InsertValue(url, userID)
-	var exErr *storage.ExistError
-	log.Println(strgErr)
-	if errors.As(strgErr, &exErr) {
-		return storage.CreateShortURL(exErr.ID), "", http.StatusConflict
-	}
-	if strgErr != nil {
-		return "", strgErr.Error(), http.StatusInternalServerError
-	}
-	shortURL := storage.CreateShortURL(currInd)
-	return shortURL, "", 0
-}
-
 // CreateShortURLBatch creates short URLs by given URLs batch and inserts them into storage.
-func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []BatchURLRequest, userID uint) ([]BatchURLResponse, string, int) {
+func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []storage.BatchURLRequest, userID uint) ([]storage.BatchURLResponse, string, int) {
 	currInd, indErr := strg.storage.GetNextIndex()
 	if indErr != nil {
-		return make([]BatchURLResponse, 0), "Bad next index", http.StatusInternalServerError
+		return make([]storage.BatchURLResponse, 0), "Bad next index", http.StatusInternalServerError
 	}
-	var resultURLs []BatchURLResponse
+	var resultURLs []storage.BatchURLResponse
 	var insertURLs []string
 	for index, URLrequest := range batchURLs {
 		shortURL := storage.CreateShortURL(currInd + uint(index))
 		insertURLs = append(insertURLs, URLrequest.OriginalURL)
-		resultURL := BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: strg.baseURL + shortURL}
+		resultURL := storage.BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: strg.baseURL + shortURL}
 		resultURLs = append(resultURLs, resultURL)
 	}
 	err := strg.storage.InsertBatchValues(insertURLs, currInd, userID)
 	if err != nil {
-		return make([]BatchURLResponse, 0), "Error while inserting into storage", http.StatusInternalServerError
+		return make([]storage.BatchURLResponse, 0), "Error while inserting into storage", http.StatusInternalServerError
 	}
 	return resultURLs, "", 0
 }
@@ -172,7 +136,7 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 		http.Error(w, "Got bad body content", http.StatusBadRequest)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(string(url), r.Context().Value(UserIDCtxName).(uint))
+	shortURL, errorMessage, errorCode := strg.storage.CreateShortURLByURL(string(url), r.Context().Value(UserIDCtxName).(uint))
 	if errorCode != 0 && errorCode != http.StatusConflict {
 		http.Error(w, errorMessage, errorCode)
 		return
@@ -206,7 +170,7 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 		http.Error(w, "Got empty url in Body", http.StatusUnprocessableEntity)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(requestURL.URL, r.Context().Value(UserIDCtxName).(uint))
+	shortURL, errorMessage, errorCode := strg.storage.CreateShortURLByURL(requestURL.URL, r.Context().Value(UserIDCtxName).(uint))
 	if errorCode != 0 && errorCode != http.StatusConflict {
 		http.Error(w, errorMessage, errorCode)
 		return
@@ -238,7 +202,7 @@ func (strg *HandlerWithStorage) CreateShortenURLBatchHandler(w http.ResponseWrit
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var batchURLs []BatchURLRequest
+	var batchURLs []storage.BatchURLRequest
 	err = json.Unmarshal(jsonBody, &batchURLs)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

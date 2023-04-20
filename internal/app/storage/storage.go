@@ -28,15 +28,17 @@ var AllPossibleChars = "abcdefghijklmnopqrstuvwxwzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 
 // IRepository interface for usage as storage
 type IRepository interface {
-	InsertValue(value string, userID uint) error                                 // InsertValue - insert value for userID into IRepository
-	GetValueByKeyAndUserID(key uint, userID uint) (string, int)                  // GetValueByKeyAndUserID - get value by key and userID from IRepository
-	GetNextIndex() (uint, error)                                                 // GetNextIndex - get next index for insertion into IRepository
-	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int) // GetAllURLsByUserID - get all URLs by userID from IRepository
-	InsertBatchValues(values []string, startIndex uint, userID uint) error       // InsertBatchValues - insert values batch for userID into IRepository
-	MarkBatchAsDeleted(IDs []uint, userID uint) error                            // MarkBatchAsDeleted - set deleted=true for rows by its IDs and userID in IRepository
-	GetStats() (response StatsResponse, errCode int)                             // GetStats - get stats from database
-	Ping() error                                                                 // Ping - check that connection to IRepository is alive
-	Shutdown() error                                                             // Shutdown - gracefully shotdown IRepository
+	InsertValue(value string, userID uint) error                                                                    // InsertValue - insert value for userID into IRepository
+	GetValueByKeyAndUserID(key uint, userID uint) (string, int)                                                     // GetValueByKeyAndUserID - get value by key and userID from IRepository
+	GetNextIndex() (uint, error)                                                                                    // GetNextIndex - get next index for insertion into IRepository
+	GetAllURLsByUserID(userID uint, baseURL string) ([]FullInfoURLResponse, int)                                    // GetAllURLsByUserID - get all URLs by userID from IRepository
+	InsertBatchValues(values []string, startIndex uint, userID uint) error                                          // InsertBatchValues - insert values batch for userID into IRepository
+	MarkBatchAsDeleted(IDs []uint, userID uint) error                                                               // MarkBatchAsDeleted - set deleted=true for rows by its IDs and userID in IRepository
+	GetStats() (response StatsResponse, errCode int)                                                                // GetStats - get stats from database
+	Ping() error                                                                                                    // Ping - check that connection to IRepository is alive
+	Shutdown() error                                                                                                // Shutdown - gracefully shotdown IRepository
+	CreateShortURLByURL(url string, userID uint) (shortURLResult string, errMsg string, errCode int)                // CreateShortURLByURL creates short URL by given URL and inserts it into storage.
+	CreateShortURLBatch(batchURLs []BatchURLRequest, userID uint, baseURL string) ([]BatchURLResponse, string, int) // CreateShortURLBatch creates short URLs by given URLs batch and inserts them into storage.
 }
 
 // ExistError - error type for existing ID in Repository
@@ -63,6 +65,22 @@ type Storage struct {
 	NextIndex       uint            // NextIndex - next index to insert
 	Encoder         *json.Encoder   // Encoder - object to encode URLs
 	Decoder         *json.Decoder   // Decoder - object to decode encoded URLs
+}
+
+// BatchURLRequest request type for batch URLs
+type BatchURLRequest struct {
+	// CorrelationID - ID for original-shorten URL match
+	CorrelationID string `json:"correlation_id"`
+	// OriginalURL - URL to shorten
+	OriginalURL string `json:"original_url"`
+}
+
+// BatchURLResponse response type for batch URLs
+type BatchURLResponse struct {
+	// CorrelationID - ID for original-shorten URL match
+	CorrelationID string `json:"correlation_id"`
+	// ShortURL - result shorten URL
+	ShortURL string `json:"short_url"`
 }
 
 // DBStorage - struct for database storage
@@ -263,6 +281,46 @@ func (strg *Storage) GetStats() (response StatsResponse, errCode int) {
 	return StatsResponse{URLs: URLsCount, Users: UsersCount}, 200
 }
 
+// CreateShortURLByURL creates short URL by given URL and inserts it into storage.
+func (strg *Storage) CreateShortURLByURL(url string, userID uint) (shortURLResult string, errMsg string, errCode int) {
+	currInd, indErr := strg.GetNextIndex()
+	if indErr != nil {
+		return "", "Bad next index", http.StatusInternalServerError
+	}
+	strgErr := strg.InsertValue(url, userID)
+	var exErr *ExistError
+	log.Println(strgErr)
+	if errors.As(strgErr, &exErr) {
+		return CreateShortURL(exErr.ID), "", http.StatusConflict
+	}
+	if strgErr != nil {
+		return "", strgErr.Error(), http.StatusInternalServerError
+	}
+	shortURL := CreateShortURL(currInd)
+	return shortURL, "", 0
+}
+
+// CreateShortURLBatch creates short URLs by given URLs batch and inserts them into storage.
+func (strg *Storage) CreateShortURLBatch(batchURLs []BatchURLRequest, userID uint, baseURL string) ([]BatchURLResponse, string, int) {
+	currInd, indErr := strg.GetNextIndex()
+	if indErr != nil {
+		return make([]BatchURLResponse, 0), "Bad next index", http.StatusInternalServerError
+	}
+	var resultURLs []BatchURLResponse
+	var insertURLs []string
+	for index, URLrequest := range batchURLs {
+		shortURL := CreateShortURL(currInd + uint(index))
+		insertURLs = append(insertURLs, URLrequest.OriginalURL)
+		resultURL := BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: baseURL + shortURL}
+		resultURLs = append(resultURLs, resultURL)
+	}
+	err := strg.InsertBatchValues(insertURLs, currInd, userID)
+	if err != nil {
+		return make([]BatchURLResponse, 0), "Error while inserting into storage", http.StatusInternalServerError
+	}
+	return resultURLs, "", 0
+}
+
 // GetNextIndex - get next index for insertion into DBStorage
 func (strg *DBStorage) GetNextIndex() (uint, error) {
 	row := strg.db.QueryRow("Select last_value from url_id_seq")
@@ -453,4 +511,44 @@ func (strg *DBStorage) GetStats() (response StatsResponse, errCode int) {
 		return StatsResponse{}, http.StatusBadRequest
 	}
 	return StatsResponse{URLs: URLsCount, Users: UsersCount}, 200
+}
+
+// CreateShortURLByURL creates short URL by given URL and inserts it into storage.
+func (strg *DBStorage) CreateShortURLByURL(url string, userID uint) (shortURLResult string, errMsg string, errCode int) {
+	currInd, indErr := strg.GetNextIndex()
+	if indErr != nil {
+		return "", "Bad next index", http.StatusInternalServerError
+	}
+	strgErr := strg.InsertValue(url, userID)
+	var exErr *ExistError
+	log.Println(strgErr)
+	if errors.As(strgErr, &exErr) {
+		return CreateShortURL(exErr.ID), "", http.StatusConflict
+	}
+	if strgErr != nil {
+		return "", strgErr.Error(), http.StatusInternalServerError
+	}
+	shortURL := CreateShortURL(currInd)
+	return shortURL, "", 0
+}
+
+// CreateShortURLBatch creates short URLs by given URLs batch and inserts them into storage.
+func (strg *DBStorage) CreateShortURLBatch(batchURLs []BatchURLRequest, userID uint, baseURL string) ([]BatchURLResponse, string, int) {
+	currInd, indErr := strg.GetNextIndex()
+	if indErr != nil {
+		return make([]BatchURLResponse, 0), "Bad next index", http.StatusInternalServerError
+	}
+	var resultURLs []BatchURLResponse
+	var insertURLs []string
+	for index, URLrequest := range batchURLs {
+		shortURL := CreateShortURL(currInd + uint(index))
+		insertURLs = append(insertURLs, URLrequest.OriginalURL)
+		resultURL := BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: baseURL + shortURL}
+		resultURLs = append(resultURLs, resultURL)
+	}
+	err := strg.InsertBatchValues(insertURLs, currInd, userID)
+	if err != nil {
+		return make([]BatchURLResponse, 0), "Error while inserting into storage", http.StatusInternalServerError
+	}
+	return resultURLs, "", 0
 }

@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -58,6 +60,19 @@ func main() {
 		}
 		close(serverStoppedChan)
 		defer cancel()
+	}()
+
+	listen, err := net.Listen("tcp", varprs.GRPCServerAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	grpcServer := grpc.NewServer()
+	pb.RegisterURLShortenderServer(grpcServer, &URLShortenderServer{})
+
+	go func() {
+		if err := grpcServer.Serve(listen); err != nil {
+			log.Fatal(err)
+		}
 	}()
 
 	if varprs.UseHTTPS {

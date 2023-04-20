@@ -15,6 +15,9 @@ var BaseURL string
 // ServerAddress - address for running URLShortener app
 var ServerAddress string
 
+// GRPCServerAddress - address for running URLShortener app in GRPC mode
+var GRPCServerAddress string
+
 // DatabaseDSN - database connection address
 var DatabaseDSN string
 
@@ -29,12 +32,13 @@ var TrustedSubnet string
 
 // ConfigStruct - struct to parse config file
 type ConfigStruct struct {
-	ServerAddress   string `json:"server_address"`    // ServerAddress - server address for urlshortener app
-	BaseURL         string `json:"base_url"`          // BaseURL - base route for URLs
-	FileStoragePath string `json:"file_storage_path"` // FileStoragePath - path to file with data in case no db storage allowed
-	DatabaseDSN     string `json:"database_dsn"`      // DatabaseDSN - connection string to database
-	EnableHTTPS     bool   `json:"enable_https"`      // EnableHTTPS - flag in order to enable https
-	TrustedSubnet   string `json:"trusted_subnet"`    // TrustedSubnet - flag for trusted subnet for handle GET /api/internal/stats
+	ServerAddress     string `json:"server_address"`      // ServerAddress - server address for urlshortener app
+	GRPCServerAddress string `json:"grpc_server_address"` // GRPCServerAddress - server address for urlshortener app in GRPC mode
+	BaseURL           string `json:"base_url"`            // BaseURL - base route for URLs
+	FileStoragePath   string `json:"file_storage_path"`   // FileStoragePath - path to file with data in case no db storage allowed
+	DatabaseDSN       string `json:"database_dsn"`        // DatabaseDSN - connection string to database
+	EnableHTTPS       bool   `json:"enable_https"`        // EnableHTTPS - flag in order to enable https
+	TrustedSubnet     string `json:"trusted_subnet"`      // TrustedSubnet - flag for trusted subnet for handle GET /api/internal/stats
 }
 
 // ParseConfigFile - function got parsing conflict file
@@ -61,6 +65,7 @@ func ParseConfigFile() ConfigStruct {
 // Init - method for parsing environment variables and variables from configs
 func Init() {
 	flag.StringVar(&ServerAddress, "a", "", "Server address")
+	flag.StringVar(&GRPCServerAddress, "gprc_addr", "", "GRPC server address")
 	flag.StringVar(&BaseURL, "b", "", "Base URL for shorten URLs")
 	flag.StringVar(&FileStoragePath, "f", "", "File path for storage")
 	flag.StringVar(&DatabaseDSN, "d", "", "Database connection address")
@@ -102,6 +107,18 @@ func Init() {
 		}
 		if ServerAddress == "" {
 			ServerAddress = "localhost:8080"
+		}
+	}
+
+	grpcServerAddrEnv := os.Getenv("GRPC_SERVER_ADDRESS")
+	if grpcServerAddrEnv != "" {
+		GRPCServerAddress = grpcServerAddrEnv
+	} else {
+		if GRPCServerAddress == "" {
+			GRPCServerAddress = config.GRPCServerAddress
+		}
+		if GRPCServerAddress == "" {
+			GRPCServerAddress = "localhost:8081"
 		}
 	}
 
