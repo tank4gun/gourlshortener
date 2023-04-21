@@ -64,7 +64,7 @@ message StatsResponse {
 
 service Shortender{
   rpc CreateShortURL(UrlToShortenRequest) returns (ShortenUrlResponse);
-  rpc GetURLById(UrlByIdRequest) returns (UrlByIdResponse);
+  rpc GetURLByID(UrlByIdRequest) returns (UrlByIdResponse);
   rpc CreateShortenURLBatch(BatchUrlRequest) returns (BatchUrlResponse);
   rpc GetAllURLs(google.protobuf.Empty) returns (FullInfoUrlBatchResponse);
   rpc DeleteURLs(DeleteUrlsRequest) returns (google.protobuf.Empty);

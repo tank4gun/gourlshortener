@@ -55,8 +55,8 @@ func (s *ShortenderServer) CreateShortURL(ctx context.Context, in *pb.UrlToShort
 	return &response, status.Error(code, errorMessage)
 }
 
-// GetURLById - grpc handler, returns full URL by its ID if it exists
-func (s *ShortenderServer) GetURLById(ctx context.Context, in *pb.UrlByIdRequest) (*pb.UrlByIdResponse, error) {
+// GetURLByID - grpc handler, returns full URL by its ID if it exists
+func (s *ShortenderServer) GetURLByID(ctx context.Context, in *pb.UrlByIdRequest) (*pb.UrlByIdResponse, error) {
 	var response pb.UrlByIdResponse
 	shortURL := in.ShortUrl
 	id := ConvertShortURLToID(shortURL)
