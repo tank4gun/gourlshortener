@@ -9,8 +9,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
