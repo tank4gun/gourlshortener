@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	pb "github.com/tank4gun/gourlshortener/internal/pkg/proto"
+
 	"github.com/tank4gun/gourlshortener/internal/app/db"
 	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"github.com/tank4gun/gourlshortener/internal/app/server"
@@ -51,6 +53,12 @@ func main() {
 	serverStoppedChan := make(chan struct{})
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
+	listen, err := net.Listen("tcp", varprs.GRPCServerAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	grpcServer := grpc.NewServer()
+	pb.RegisterShortenderServer(grpcServer, handlers.NewShortenderServer(strg, deleteChannel))
 	go func() {
 		<-sigChan
 		close(deleteChannel)
@@ -58,16 +66,10 @@ func main() {
 		if err := currentServer.Shutdown(ctx); err != nil {
 			log.Fatalf("Err while Shutdown, %v", err)
 		}
+		grpcServer.GracefulStop()
 		close(serverStoppedChan)
 		defer cancel()
 	}()
-
-	listen, err := net.Listen("tcp", varprs.GRPCServerAddress)
-	if err != nil {
-		log.Fatal(err)
-	}
-	grpcServer := grpc.NewServer()
-	pb.RegisterURLShortenderServer(grpcServer, &URLShortenderServer{})
 
 	go func() {
 		if err := grpcServer.Serve(listen); err != nil {

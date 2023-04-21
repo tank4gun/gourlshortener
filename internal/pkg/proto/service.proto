@@ -62,7 +62,7 @@ message StatsResponse {
   int32 users = 2;
 }
 
-service UrlShortender{
+service Shortender{
   rpc CreateShortUrl(UrlToShortenRequest) returns (ShortenUrlResponse);
   rpc GetUrlById(UrlByIdRequest) returns (UrlByIdResponse);
   rpc CreateShortenURLBatch(BatchUrlRequest) returns (BatchUrlResponse);

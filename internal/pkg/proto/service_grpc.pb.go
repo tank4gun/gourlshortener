@@ -20,19 +20,19 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	UrlShortender_CreateShortUrl_FullMethodName        = "/service.UrlShortender/CreateShortUrl"
-	UrlShortender_GetUrlById_FullMethodName            = "/service.UrlShortender/GetUrlById"
-	UrlShortender_CreateShortenURLBatch_FullMethodName = "/service.UrlShortender/CreateShortenURLBatch"
-	UrlShortender_GetAllUrls_FullMethodName            = "/service.UrlShortender/GetAllUrls"
-	UrlShortender_DeleteUrls_FullMethodName            = "/service.UrlShortender/DeleteUrls"
-	UrlShortender_Ping_FullMethodName                  = "/service.UrlShortender/Ping"
-	UrlShortender_GetStats_FullMethodName              = "/service.UrlShortender/GetStats"
+	Shortender_CreateShortUrl_FullMethodName        = "/service.Shortender/CreateShortUrl"
+	Shortender_GetUrlById_FullMethodName            = "/service.Shortender/GetUrlById"
+	Shortender_CreateShortenURLBatch_FullMethodName = "/service.Shortender/CreateShortenURLBatch"
+	Shortender_GetAllUrls_FullMethodName            = "/service.Shortender/GetAllUrls"
+	Shortender_DeleteUrls_FullMethodName            = "/service.Shortender/DeleteUrls"
+	Shortender_Ping_FullMethodName                  = "/service.Shortender/Ping"
+	Shortender_GetStats_FullMethodName              = "/service.Shortender/GetStats"
 )
 
-// UrlShortenderClient is the client API for UrlShortender service.
+// ShortenderClient is the client API for Shortender service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type UrlShortenderClient interface {
+type ShortenderClient interface {
 	CreateShortUrl(ctx context.Context, in *UrlToShortenRequest, opts ...grpc.CallOption) (*ShortenUrlResponse, error)
 	GetUrlById(ctx context.Context, in *UrlByIdRequest, opts ...grpc.CallOption) (*UrlByIdResponse, error)
 	CreateShortenURLBatch(ctx context.Context, in *BatchUrlRequest, opts ...grpc.CallOption) (*BatchUrlResponse, error)
@@ -42,81 +42,81 @@ type UrlShortenderClient interface {
 	GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*StatsResponse, error)
 }
 
-type urlShortenderClient struct {
+type shortenderClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewUrlShortenderClient(cc grpc.ClientConnInterface) UrlShortenderClient {
-	return &urlShortenderClient{cc}
+func NewShortenderClient(cc grpc.ClientConnInterface) ShortenderClient {
+	return &shortenderClient{cc}
 }
 
-func (c *urlShortenderClient) CreateShortUrl(ctx context.Context, in *UrlToShortenRequest, opts ...grpc.CallOption) (*ShortenUrlResponse, error) {
+func (c *shortenderClient) CreateShortUrl(ctx context.Context, in *UrlToShortenRequest, opts ...grpc.CallOption) (*ShortenUrlResponse, error) {
 	out := new(ShortenUrlResponse)
-	err := c.cc.Invoke(ctx, UrlShortender_CreateShortUrl_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Shortender_CreateShortUrl_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *urlShortenderClient) GetUrlById(ctx context.Context, in *UrlByIdRequest, opts ...grpc.CallOption) (*UrlByIdResponse, error) {
+func (c *shortenderClient) GetUrlById(ctx context.Context, in *UrlByIdRequest, opts ...grpc.CallOption) (*UrlByIdResponse, error) {
 	out := new(UrlByIdResponse)
-	err := c.cc.Invoke(ctx, UrlShortender_GetUrlById_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Shortender_GetUrlById_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *urlShortenderClient) CreateShortenURLBatch(ctx context.Context, in *BatchUrlRequest, opts ...grpc.CallOption) (*BatchUrlResponse, error) {
+func (c *shortenderClient) CreateShortenURLBatch(ctx context.Context, in *BatchUrlRequest, opts ...grpc.CallOption) (*BatchUrlResponse, error) {
 	out := new(BatchUrlResponse)
-	err := c.cc.Invoke(ctx, UrlShortender_CreateShortenURLBatch_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Shortender_CreateShortenURLBatch_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *urlShortenderClient) GetAllUrls(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*FullInfoUrlBatchResponse, error) {
+func (c *shortenderClient) GetAllUrls(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*FullInfoUrlBatchResponse, error) {
 	out := new(FullInfoUrlBatchResponse)
-	err := c.cc.Invoke(ctx, UrlShortender_GetAllUrls_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Shortender_GetAllUrls_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *urlShortenderClient) DeleteUrls(ctx context.Context, in *DeleteUrlsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *shortenderClient) DeleteUrls(ctx context.Context, in *DeleteUrlsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, UrlShortender_DeleteUrls_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Shortender_DeleteUrls_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *urlShortenderClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *shortenderClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, UrlShortender_Ping_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Shortender_Ping_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *urlShortenderClient) GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*StatsResponse, error) {
+func (c *shortenderClient) GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*StatsResponse, error) {
 	out := new(StatsResponse)
-	err := c.cc.Invoke(ctx, UrlShortender_GetStats_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Shortender_GetStats_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// UrlShortenderServer is the server API for UrlShortender service.
-// All implementations must embed UnimplementedUrlShortenderServer
+// ShortenderServer is the server API for Shortender service.
+// All implementations must embed UnimplementedShortenderServer
 // for forward compatibility
-type UrlShortenderServer interface {
+type ShortenderServer interface {
 	CreateShortUrl(context.Context, *UrlToShortenRequest) (*ShortenUrlResponse, error)
 	GetUrlById(context.Context, *UrlByIdRequest) (*UrlByIdResponse, error)
 	CreateShortenURLBatch(context.Context, *BatchUrlRequest) (*BatchUrlResponse, error)
@@ -124,207 +124,207 @@ type UrlShortenderServer interface {
 	DeleteUrls(context.Context, *DeleteUrlsRequest) (*emptypb.Empty, error)
 	Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	GetStats(context.Context, *emptypb.Empty) (*StatsResponse, error)
-	mustEmbedUnimplementedUrlShortenderServer()
+	mustEmbedUnimplementedShortenderServer()
 }
 
-// UnimplementedUrlShortenderServer must be embedded to have forward compatible implementations.
-type UnimplementedUrlShortenderServer struct {
+// UnimplementedShortenderServer must be embedded to have forward compatible implementations.
+type UnimplementedShortenderServer struct {
 }
 
-func (UnimplementedUrlShortenderServer) CreateShortUrl(context.Context, *UrlToShortenRequest) (*ShortenUrlResponse, error) {
+func (UnimplementedShortenderServer) CreateShortUrl(context.Context, *UrlToShortenRequest) (*ShortenUrlResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateShortUrl not implemented")
 }
-func (UnimplementedUrlShortenderServer) GetUrlById(context.Context, *UrlByIdRequest) (*UrlByIdResponse, error) {
+func (UnimplementedShortenderServer) GetUrlById(context.Context, *UrlByIdRequest) (*UrlByIdResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUrlById not implemented")
 }
-func (UnimplementedUrlShortenderServer) CreateShortenURLBatch(context.Context, *BatchUrlRequest) (*BatchUrlResponse, error) {
+func (UnimplementedShortenderServer) CreateShortenURLBatch(context.Context, *BatchUrlRequest) (*BatchUrlResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateShortenURLBatch not implemented")
 }
-func (UnimplementedUrlShortenderServer) GetAllUrls(context.Context, *emptypb.Empty) (*FullInfoUrlBatchResponse, error) {
+func (UnimplementedShortenderServer) GetAllUrls(context.Context, *emptypb.Empty) (*FullInfoUrlBatchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllUrls not implemented")
 }
-func (UnimplementedUrlShortenderServer) DeleteUrls(context.Context, *DeleteUrlsRequest) (*emptypb.Empty, error) {
+func (UnimplementedShortenderServer) DeleteUrls(context.Context, *DeleteUrlsRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUrls not implemented")
 }
-func (UnimplementedUrlShortenderServer) Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+func (UnimplementedShortenderServer) Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedUrlShortenderServer) GetStats(context.Context, *emptypb.Empty) (*StatsResponse, error) {
+func (UnimplementedShortenderServer) GetStats(context.Context, *emptypb.Empty) (*StatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
 }
-func (UnimplementedUrlShortenderServer) mustEmbedUnimplementedUrlShortenderServer() {}
+func (UnimplementedShortenderServer) mustEmbedUnimplementedShortenderServer() {}
 
-// UnsafeUrlShortenderServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to UrlShortenderServer will
+// UnsafeShortenderServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ShortenderServer will
 // result in compilation errors.
-type UnsafeUrlShortenderServer interface {
-	mustEmbedUnimplementedUrlShortenderServer()
+type UnsafeShortenderServer interface {
+	mustEmbedUnimplementedShortenderServer()
 }
 
-func RegisterUrlShortenderServer(s grpc.ServiceRegistrar, srv UrlShortenderServer) {
-	s.RegisterService(&UrlShortender_ServiceDesc, srv)
+func RegisterShortenderServer(s grpc.ServiceRegistrar, srv ShortenderServer) {
+	s.RegisterService(&Shortender_ServiceDesc, srv)
 }
 
-func _UrlShortender_CreateShortUrl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortender_CreateShortUrl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UrlToShortenRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UrlShortenderServer).CreateShortUrl(ctx, in)
+		return srv.(ShortenderServer).CreateShortUrl(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UrlShortender_CreateShortUrl_FullMethodName,
+		FullMethod: Shortender_CreateShortUrl_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UrlShortenderServer).CreateShortUrl(ctx, req.(*UrlToShortenRequest))
+		return srv.(ShortenderServer).CreateShortUrl(ctx, req.(*UrlToShortenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UrlShortender_GetUrlById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortender_GetUrlById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UrlByIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UrlShortenderServer).GetUrlById(ctx, in)
+		return srv.(ShortenderServer).GetUrlById(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UrlShortender_GetUrlById_FullMethodName,
+		FullMethod: Shortender_GetUrlById_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UrlShortenderServer).GetUrlById(ctx, req.(*UrlByIdRequest))
+		return srv.(ShortenderServer).GetUrlById(ctx, req.(*UrlByIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UrlShortender_CreateShortenURLBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortender_CreateShortenURLBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BatchUrlRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UrlShortenderServer).CreateShortenURLBatch(ctx, in)
+		return srv.(ShortenderServer).CreateShortenURLBatch(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UrlShortender_CreateShortenURLBatch_FullMethodName,
+		FullMethod: Shortender_CreateShortenURLBatch_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UrlShortenderServer).CreateShortenURLBatch(ctx, req.(*BatchUrlRequest))
+		return srv.(ShortenderServer).CreateShortenURLBatch(ctx, req.(*BatchUrlRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UrlShortender_GetAllUrls_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortender_GetAllUrls_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UrlShortenderServer).GetAllUrls(ctx, in)
+		return srv.(ShortenderServer).GetAllUrls(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UrlShortender_GetAllUrls_FullMethodName,
+		FullMethod: Shortender_GetAllUrls_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UrlShortenderServer).GetAllUrls(ctx, req.(*emptypb.Empty))
+		return srv.(ShortenderServer).GetAllUrls(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UrlShortender_DeleteUrls_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortender_DeleteUrls_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteUrlsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UrlShortenderServer).DeleteUrls(ctx, in)
+		return srv.(ShortenderServer).DeleteUrls(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UrlShortender_DeleteUrls_FullMethodName,
+		FullMethod: Shortender_DeleteUrls_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UrlShortenderServer).DeleteUrls(ctx, req.(*DeleteUrlsRequest))
+		return srv.(ShortenderServer).DeleteUrls(ctx, req.(*DeleteUrlsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UrlShortender_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortender_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UrlShortenderServer).Ping(ctx, in)
+		return srv.(ShortenderServer).Ping(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UrlShortender_Ping_FullMethodName,
+		FullMethod: Shortender_Ping_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UrlShortenderServer).Ping(ctx, req.(*emptypb.Empty))
+		return srv.(ShortenderServer).Ping(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UrlShortender_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortender_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UrlShortenderServer).GetStats(ctx, in)
+		return srv.(ShortenderServer).GetStats(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UrlShortender_GetStats_FullMethodName,
+		FullMethod: Shortender_GetStats_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UrlShortenderServer).GetStats(ctx, req.(*emptypb.Empty))
+		return srv.(ShortenderServer).GetStats(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// UrlShortender_ServiceDesc is the grpc.ServiceDesc for UrlShortender service.
+// Shortender_ServiceDesc is the grpc.ServiceDesc for Shortender service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var UrlShortender_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "service.UrlShortender",
-	HandlerType: (*UrlShortenderServer)(nil),
+var Shortender_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "service.Shortender",
+	HandlerType: (*ShortenderServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "CreateShortUrl",
-			Handler:    _UrlShortender_CreateShortUrl_Handler,
+			Handler:    _Shortender_CreateShortUrl_Handler,
 		},
 		{
 			MethodName: "GetUrlById",
-			Handler:    _UrlShortender_GetUrlById_Handler,
+			Handler:    _Shortender_GetUrlById_Handler,
 		},
 		{
 			MethodName: "CreateShortenURLBatch",
-			Handler:    _UrlShortender_CreateShortenURLBatch_Handler,
+			Handler:    _Shortender_CreateShortenURLBatch_Handler,
 		},
 		{
 			MethodName: "GetAllUrls",
-			Handler:    _UrlShortender_GetAllUrls_Handler,
+			Handler:    _Shortender_GetAllUrls_Handler,
 		},
 		{
 			MethodName: "DeleteUrls",
-			Handler:    _UrlShortender_DeleteUrls_Handler,
+			Handler:    _Shortender_DeleteUrls_Handler,
 		},
 		{
 			MethodName: "Ping",
-			Handler:    _UrlShortender_Ping_Handler,
+			Handler:    _Shortender_Ping_Handler,
 		},
 		{
 			MethodName: "GetStats",
-			Handler:    _UrlShortender_GetStats_Handler,
+			Handler:    _Shortender_GetStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
