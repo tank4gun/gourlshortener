@@ -30,8 +30,8 @@ func NewShortenderServer(storage storage.IRepository, deleteChannel chan Request
 	return &ShortenderServer{storage: storage, baseURL: varprs.BaseURL, deleteChannel: deleteChannel}
 }
 
-// CreateShortUrl - grpc handler, converts URL from request body to shorten one and saves into db
-func (s *ShortenderServer) CreateShortUrl(ctx context.Context, in *pb.UrlToShortenRequest) (*pb.ShortenUrlResponse, error) {
+// CreateShortURL - grpc handler, converts URL from request body to shorten one and saves into db
+func (s *ShortenderServer) CreateShortURL(ctx context.Context, in *pb.UrlToShortenRequest) (*pb.ShortenUrlResponse, error) {
 	var response pb.ShortenUrlResponse
 
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -55,8 +55,8 @@ func (s *ShortenderServer) CreateShortUrl(ctx context.Context, in *pb.UrlToShort
 	return &response, status.Error(code, errorMessage)
 }
 
-// GetUrlById - grpc handler, returns full URL by its ID if it exists
-func (s *ShortenderServer) GetUrlById(ctx context.Context, in *pb.UrlByIdRequest) (*pb.UrlByIdResponse, error) {
+// GetURLById - grpc handler, returns full URL by its ID if it exists
+func (s *ShortenderServer) GetURLById(ctx context.Context, in *pb.UrlByIdRequest) (*pb.UrlByIdResponse, error) {
 	var response pb.UrlByIdResponse
 	shortURL := in.ShortUrl
 	id := ConvertShortURLToID(shortURL)
@@ -105,8 +105,8 @@ func (s *ShortenderServer) CreateShortenURLBatch(ctx context.Context, in *pb.Bat
 	return &response, nil
 }
 
-// GetAllUrls - grpc handler, return all URLs for given User
-func (s *ShortenderServer) GetAllUrls(ctx context.Context, in *emptypb.Empty) (*pb.FullInfoUrlBatchResponse, error) {
+// GetAllURLs - grpc handler, return all URLs for given User
+func (s *ShortenderServer) GetAllURLs(ctx context.Context, in *emptypb.Empty) (*pb.FullInfoUrlBatchResponse, error) {
 	var response pb.FullInfoUrlBatchResponse
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -127,8 +127,8 @@ func (s *ShortenderServer) GetAllUrls(ctx context.Context, in *emptypb.Empty) (*
 	return &response, nil
 }
 
-// DeleteUrls - grpc handler, removes all URLs for given User
-func (s *ShortenderServer) DeleteUrls(ctx context.Context, in *pb.DeleteUrlsRequest) (*emptypb.Empty, error) {
+// DeleteURLs - grpc handler, removes all URLs for given User
+func (s *ShortenderServer) DeleteURLs(ctx context.Context, in *pb.DeleteUrlsRequest) (*emptypb.Empty, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Internal, "Couldn't get data from context")

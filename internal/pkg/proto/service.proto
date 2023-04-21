@@ -63,11 +63,11 @@ message StatsResponse {
 }
 
 service Shortender{
-  rpc CreateShortUrl(UrlToShortenRequest) returns (ShortenUrlResponse);
-  rpc GetUrlById(UrlByIdRequest) returns (UrlByIdResponse);
+  rpc CreateShortURL(UrlToShortenRequest) returns (ShortenUrlResponse);
+  rpc GetURLById(UrlByIdRequest) returns (UrlByIdResponse);
   rpc CreateShortenURLBatch(BatchUrlRequest) returns (BatchUrlResponse);
-  rpc GetAllUrls(google.protobuf.Empty) returns (FullInfoUrlBatchResponse);
-  rpc DeleteUrls(DeleteUrlsRequest) returns (google.protobuf.Empty);
+  rpc GetAllURLs(google.protobuf.Empty) returns (FullInfoUrlBatchResponse);
+  rpc DeleteURLs(DeleteUrlsRequest) returns (google.protobuf.Empty);
   rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
   rpc GetStats(google.protobuf.Empty) returns (StatsResponse);
 }
