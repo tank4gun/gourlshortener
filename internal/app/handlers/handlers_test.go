@@ -319,7 +319,7 @@ func TestCreateShortenURLBatchHandler(t *testing.T) {
 			responseBody, err := io.ReadAll(result.Body)
 			assert.Nil(t, err)
 			assert.Equal(t, tt.want.responseContent, string(responseBody))
-			var responseObj []BatchURLResponse
+			var responseObj []storage.BatchURLResponse
 			err = json.Unmarshal(responseBody, &responseObj)
 			assert.Nil(t, err)
 		})

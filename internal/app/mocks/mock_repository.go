@@ -34,6 +34,38 @@ func (m *MockIRepository) EXPECT() *MockIRepositoryMockRecorder {
 	return m.recorder
 }
 
+// CreateShortURLBatch mocks base method.
+func (m *MockIRepository) CreateShortURLBatch(arg0 []storage.BatchURLRequest, arg1 uint, arg2 string) ([]storage.BatchURLResponse, string, int) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateShortURLBatch", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]storage.BatchURLResponse)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(int)
+	return ret0, ret1, ret2
+}
+
+// CreateShortURLBatch indicates an expected call of CreateShortURLBatch.
+func (mr *MockIRepositoryMockRecorder) CreateShortURLBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateShortURLBatch", reflect.TypeOf((*MockIRepository)(nil).CreateShortURLBatch), arg0, arg1, arg2)
+}
+
+// CreateShortURLByURL mocks base method.
+func (m *MockIRepository) CreateShortURLByURL(arg0 string, arg1 uint) (string, string, int) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateShortURLByURL", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(int)
+	return ret0, ret1, ret2
+}
+
+// CreateShortURLByURL indicates an expected call of CreateShortURLByURL.
+func (mr *MockIRepositoryMockRecorder) CreateShortURLByURL(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateShortURLByURL", reflect.TypeOf((*MockIRepository)(nil).CreateShortURLByURL), arg0, arg1)
+}
+
 // GetAllURLsByUserID mocks base method.
 func (m *MockIRepository) GetAllURLsByUserID(arg0 uint, arg1 string) ([]storage.FullInfoURLResponse, int) {
 	m.ctrl.T.Helper()
