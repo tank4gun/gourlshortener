@@ -2,6 +2,10 @@ package handlers
 
 import (
 	"context"
+	"net"
+	"net/http"
+	"strconv"
+
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	pb "github.com/tank4gun/gourlshortener/internal/pkg/proto"
@@ -9,9 +13,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"net"
-	"net/http"
-	"strconv"
 )
 
 // ShortenderServer - grpc server struct
