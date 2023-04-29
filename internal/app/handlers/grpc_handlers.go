@@ -81,11 +81,11 @@ func (s *ShortenderServer) CreateShortURL(ctx context.Context, in *pb.UrlToShort
 func (s *ShortenderServer) GetURLByID(ctx context.Context, in *pb.UrlByIdRequest) (*pb.UrlByIdResponse, error) {
 	var response pb.UrlByIdResponse
 	shortURL := in.ShortUrl
-	originalUrl, errorCode := CommonServer{}.GetURLByID(s.storage, shortURL, GetUserIDFromContext(ctx))
+	originalURL, errorCode := CommonServer{}.GetURLByID(s.storage, shortURL, GetUserIDFromContext(ctx))
 	if errorCode != 0 {
 		return &response, status.Errorf(codes.NotFound, "Couldn't find url for id %s", shortURL)
 	}
-	response.OriginalUrl = originalUrl
+	response.OriginalUrl = originalURL
 	return &response, nil
 }
 
