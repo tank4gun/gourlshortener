@@ -16,6 +16,7 @@ import (
 
 	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/types"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
@@ -78,7 +79,7 @@ func SendCompressed(next http.Handler) http.Handler {
 // CheckAuth - middleware for checking that user is authorized
 func CheckAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := (*r).Cookie(handlers.URLShortenderCookieName)
+		cookie, err := (*r).Cookie(types.URLShortenderCookieName)
 		if cookie != nil && err != nil {
 			fmt.Println(err.Error())
 			io.WriteString(w, err.Error())
@@ -86,29 +87,29 @@ func CheckAuth(next http.Handler) http.Handler {
 		}
 		if cookie != nil {
 			cookieValue, _ := hex.DecodeString(cookie.Value)
-			h := hmac.New(sha256.New, handlers.CookieKey)
+			h := hmac.New(sha256.New, types.CookieKey)
 			h.Write(cookieValue[:4])
 			sign := h.Sum(nil)
 			if hmac.Equal(sign, cookieValue[4:]) {
-				ctx := context.WithValue(r.Context(), handlers.UserIDCtxName, uint(binary.BigEndian.Uint16(cookieValue[:4])))
+				ctx := context.WithValue(r.Context(), types.UserIDCtxName, uint(binary.BigEndian.Uint16(cookieValue[:4])))
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 		}
 
 		newID := GenerateNewID()
-		h := hmac.New(sha256.New, handlers.CookieKey)
+		h := hmac.New(sha256.New, types.CookieKey)
 		h.Write(newID)
 		sign := h.Sum(nil)
-		newCookie := http.Cookie{Name: handlers.URLShortenderCookieName, Value: hex.EncodeToString(append(newID[:], sign[:]...))}
+		newCookie := http.Cookie{Name: types.URLShortenderCookieName, Value: hex.EncodeToString(append(newID[:], sign[:]...))}
 		http.SetCookie(w, &newCookie)
-		ctx := context.WithValue(r.Context(), handlers.UserIDCtxName, uint(binary.BigEndian.Uint16(newID)))
+		ctx := context.WithValue(r.Context(), types.UserIDCtxName, uint(binary.BigEndian.Uint16(newID)))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 // CreateServer - base method for creating Router and use it in http.Server
-func CreateServer(startStorage storage.IRepository, deleteChannel chan handlers.RequestToDelete) *http.Server {
+func CreateServer(startStorage storage.IRepository, deleteChannel chan types.RequestToDelete) *http.Server {
 	router := chi.NewRouter()
 	router.Use(ReceiveCompressed)
 	router.Use(SendCompressed)

@@ -17,6 +17,7 @@ import (
 
 	"github.com/tank4gun/gourlshortener/internal/app/mocks"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/types"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
 
@@ -60,10 +61,10 @@ func TestGetURLByIDHandler(t *testing.T) {
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("id", tt.url[1:])
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			ctx := context.WithValue(request.Context(), types.UserIDCtxName, uint(1))
 			request = request.WithContext(ctx)
 			w := httptest.NewRecorder()
-			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.currentStorage, make(chan RequestToDelete, 10)).GetURLByIDHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.currentStorage, make(chan types.RequestToDelete, 10)).GetURLByIDHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -105,9 +106,9 @@ func TestCreateShortURLHandler(t *testing.T) {
 			varprs.Init()
 			request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(tt.url)))
 			w := httptest.NewRecorder()
-			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			ctx := context.WithValue(request.Context(), types.UserIDCtxName, uint(1))
 			request = request.WithContext(ctx)
-			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage, make(chan RequestToDelete, 10)).CreateShortURLHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage, make(chan types.RequestToDelete, 10)).CreateShortURLHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			assert.Equal(t, tt.want.code, result.StatusCode)
@@ -240,9 +241,9 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 			request := httptest.NewRequest(
 				http.MethodPost, "/api/shorten", bytes.NewReader([]byte(tt.requestBody)))
 			w := httptest.NewRecorder()
-			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			ctx := context.WithValue(request.Context(), types.UserIDCtxName, uint(1))
 			request = request.WithContext(ctx)
-			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage, make(chan RequestToDelete, 10)).CreateShortenURLFromBodyHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage, make(chan types.RequestToDelete, 10)).CreateShortenURLFromBodyHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			assert.Equal(t, tt.want.code, result.StatusCode)
@@ -254,7 +255,7 @@ func TestCreateShortenURLFromBodyHandler(t *testing.T) {
 			responseBody, err := io.ReadAll(result.Body)
 			assert.Nil(t, err)
 			assert.Equal(t, tt.want.responseContent, string(responseBody))
-			var responseObj ShortenURLResponse
+			var responseObj types.ShortenURLResponse
 			err = json.Unmarshal(responseBody, &responseObj)
 			assert.Nil(t, err)
 		})
@@ -305,9 +306,9 @@ func TestCreateShortenURLBatchHandler(t *testing.T) {
 			request := httptest.NewRequest(
 				http.MethodPost, "/api/shorten/batch", bytes.NewReader([]byte(tt.requestBody)))
 			w := httptest.NewRecorder()
-			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			ctx := context.WithValue(request.Context(), types.UserIDCtxName, uint(1))
 			request = request.WithContext(ctx)
-			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage, make(chan RequestToDelete, 10)).CreateShortenURLBatchHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(&tt.previousStorage, make(chan types.RequestToDelete, 10)).CreateShortenURLBatchHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			assert.Equal(t, tt.want.code, result.StatusCode)
@@ -347,13 +348,13 @@ func TestPingHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, "/ping", nil)
 			w := httptest.NewRecorder()
-			ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+			ctx := context.WithValue(request.Context(), types.UserIDCtxName, uint(1))
 			request = request.WithContext(ctx)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			repo := mocks.NewMockIRepository(ctrl)
 			repo.EXPECT().Ping().Return(tc.pingResponse)
-			handler := http.HandlerFunc(NewHandlerWithStorage(repo, make(chan RequestToDelete, 10)).PingHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(repo, make(chan types.RequestToDelete, 10)).PingHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -398,13 +399,13 @@ func TestGetAllURLsHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
 			w := httptest.NewRecorder()
-			ctx := context.WithValue(request.Context(), UserIDCtxName, tc.userID)
+			ctx := context.WithValue(request.Context(), types.UserIDCtxName, tc.userID)
 			request = request.WithContext(ctx)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			repo := mocks.NewMockIRepository(ctrl)
 			repo.EXPECT().GetAllURLsByUserID(tc.userID, "http://localhost:8080/").Return(tc.mockResponse, tc.mockError)
-			handler := http.HandlerFunc(NewHandlerWithStorage(repo, make(chan RequestToDelete, 10)).GetAllURLsHandler)
+			handler := http.HandlerFunc(NewHandlerWithStorage(repo, make(chan types.RequestToDelete, 10)).GetAllURLsHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -441,11 +442,11 @@ func TestDeleteURLsHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader([]byte(tc.requestBody)))
 			w := httptest.NewRecorder()
-			ctx := context.WithValue(request.Context(), UserIDCtxName, tc.userID)
+			ctx := context.WithValue(request.Context(), types.UserIDCtxName, tc.userID)
 			request = request.WithContext(ctx)
 			handler := http.HandlerFunc(NewHandlerWithStorage(&storage.Storage{
 				InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
-			}, make(chan RequestToDelete, 10)).DeleteURLsHandler)
+			}, make(chan types.RequestToDelete, 10)).DeleteURLsHandler)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()

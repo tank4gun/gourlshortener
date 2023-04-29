@@ -18,6 +18,7 @@ import (
 	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"github.com/tank4gun/gourlshortener/internal/app/server"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/types"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 	"google.golang.org/grpc"
 )
@@ -46,7 +47,7 @@ func main() {
 	internalStorage := map[uint]storage.URL{}
 	nextIndex := uint(1)
 	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath, varprs.DatabaseDSN)
-	deleteChannel := make(chan handlers.RequestToDelete, 10)
+	deleteChannel := make(chan types.RequestToDelete, 10)
 	currentServer := server.CreateServer(strg, deleteChannel)
 
 	sigChan := make(chan os.Signal, 1)
@@ -57,7 +58,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(handlers.UserIDInterceptor))
 	pb.RegisterShortenderServer(grpcServer, handlers.NewShortenderServer(strg, deleteChannel))
 	go func() {
 		<-sigChan
