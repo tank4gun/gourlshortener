@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -11,11 +12,15 @@ import (
 	"syscall"
 	"time"
 
+	pb "github.com/tank4gun/gourlshortener/internal/pkg/proto"
+
 	"github.com/tank4gun/gourlshortener/internal/app/db"
 	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"github.com/tank4gun/gourlshortener/internal/app/server"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/types"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
+	"google.golang.org/grpc"
 )
 
 // Use command `go run -ldflags "-X main.buildVersion=1.1.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X main.buildCommit=123" shortener/main.go`
@@ -42,13 +47,19 @@ func main() {
 	internalStorage := map[uint]storage.URL{}
 	nextIndex := uint(1)
 	strg, _ := storage.NewStorage(internalStorage, nextIndex, varprs.FileStoragePath, varprs.DatabaseDSN)
-	deleteChannel := make(chan handlers.RequestToDelete, 10)
+	deleteChannel := make(chan types.RequestToDelete, 10)
 	currentServer := server.CreateServer(strg, deleteChannel)
 
 	sigChan := make(chan os.Signal, 1)
 	serverStoppedChan := make(chan struct{})
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
+	listen, err := net.Listen("tcp", varprs.GRPCServerAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(handlers.UserIDInterceptor))
+	pb.RegisterShortenderServer(grpcServer, handlers.NewShortenderServer(strg, deleteChannel))
 	go func() {
 		<-sigChan
 		close(deleteChannel)
@@ -56,8 +67,15 @@ func main() {
 		if err := currentServer.Shutdown(ctx); err != nil {
 			log.Fatalf("Err while Shutdown, %v", err)
 		}
+		grpcServer.GracefulStop()
 		close(serverStoppedChan)
 		defer cancel()
+	}()
+
+	go func() {
+		if err := grpcServer.Serve(listen); err != nil {
+			log.Fatal(err)
+		}
 	}()
 
 	if varprs.UseHTTPS {

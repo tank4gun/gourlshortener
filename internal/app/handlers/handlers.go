@@ -3,35 +3,17 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
+	"github.com/go-chi/chi/v5"
 	"io"
 	"log"
 	"math"
+	"net"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/types"
 	"github.com/tank4gun/gourlshortener/internal/app/varprs"
 )
-
-// userCtxName - type string
-type userCtxName string
-
-// UserIDCtxName - context key for userID
-var UserIDCtxName = userCtxName("UserID")
-
-// CookieKey - key for cookie generator
-var CookieKey = []byte("URL-Shortener-Key")
-
-// URLShortenderCookieName - cookie name
-var URLShortenderCookieName = "URL-Shortener"
-
-// RequestToDelete - message type for URL deletion
-type RequestToDelete struct {
-	URLs   []string // URLs - list with URLs to delete
-	UserID uint     // UserID - user ID for URLs to delete
-}
 
 // HandlerWithStorage is used for storing all info about URLShortener service objects and handling requests.
 type HandlerWithStorage struct {
@@ -40,39 +22,11 @@ type HandlerWithStorage struct {
 	// baseURL - base URL for shorten URLs, i.e. http://localhost:8080
 	baseURL string
 	// deleteChannel - channel for RequestToDelete object to process
-	deleteChannel chan RequestToDelete
-}
-
-// URLBodyRequest is a base structure for request
-type URLBodyRequest struct {
-	// URL to shorten
-	URL string `json:"url"`
-}
-
-// ShortenURLResponse response for shorten URL creation
-type ShortenURLResponse struct {
-	// URL result
-	URL string `json:"result"`
-}
-
-// BatchURLRequest request type for batch URLs
-type BatchURLRequest struct {
-	// CorrelationID - ID for original-shorten URL match
-	CorrelationID string `json:"correlation_id"`
-	// OriginalURL - URL to shorten
-	OriginalURL string `json:"original_url"`
-}
-
-// BatchURLResponse response type for batch URLs
-type BatchURLResponse struct {
-	// CorrelationID - ID for original-shorten URL match
-	CorrelationID string `json:"correlation_id"`
-	// ShortURL - result shorten URL
-	ShortURL string `json:"short_url"`
+	deleteChannel chan types.RequestToDelete
 }
 
 // NewHandlerWithStorage creates HandlerWithStorage object with given storage.
-func NewHandlerWithStorage(storageVal storage.IRepository, deleteChannel chan RequestToDelete) *HandlerWithStorage {
+func NewHandlerWithStorage(storageVal storage.IRepository, deleteChannel chan types.RequestToDelete) *HandlerWithStorage {
 	return &HandlerWithStorage{storage: storageVal, baseURL: varprs.BaseURL, deleteChannel: deleteChannel}
 }
 
@@ -108,56 +62,37 @@ func (strg *HandlerWithStorage) DeleteURLsDaemon() {
 	}
 }
 
-// CreateShortURLByURL creates short URL by given URL and inserts it into storage.
-func (strg *HandlerWithStorage) CreateShortURLByURL(url string, userID uint) (shortURLResult string, errMsg string, errCode int) {
-	currInd, indErr := strg.storage.GetNextIndex()
-	if indErr != nil {
-		return "", "Bad next index", http.StatusInternalServerError
-	}
-	strgErr := strg.storage.InsertValue(url, userID)
-	var exErr *storage.ExistError
-	log.Println(strgErr)
-	if errors.As(strgErr, &exErr) {
-		return storage.CreateShortURL(exErr.ID), "", http.StatusConflict
-	}
-	if strgErr != nil {
-		return "", strgErr.Error(), http.StatusInternalServerError
-	}
-	shortURL := storage.CreateShortURL(currInd)
-	return shortURL, "", 0
-}
-
-// CreateShortURLBatch creates short URLs by given URLs batch and inserts them into storage.
-func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []BatchURLRequest, userID uint) ([]BatchURLResponse, string, int) {
-	currInd, indErr := strg.storage.GetNextIndex()
-	if indErr != nil {
-		return make([]BatchURLResponse, 0), "Bad next index", http.StatusInternalServerError
-	}
-	var resultURLs []BatchURLResponse
-	var insertURLs []string
-	for index, URLrequest := range batchURLs {
-		shortURL := storage.CreateShortURL(currInd + uint(index))
-		insertURLs = append(insertURLs, URLrequest.OriginalURL)
-		resultURL := BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: strg.baseURL + shortURL}
-		resultURLs = append(resultURLs, resultURL)
-	}
-	err := strg.storage.InsertBatchValues(insertURLs, currInd, userID)
-	if err != nil {
-		return make([]BatchURLResponse, 0), "Error while inserting into storage", http.StatusInternalServerError
-	}
-	return resultURLs, "", 0
-}
+//
+//// CreateShortURLBatch creates short URLs by given URLs batch and inserts them into storage.
+//func (strg *HandlerWithStorage) CreateShortURLBatch(batchURLs []storage.BatchURLRequest, userID uint) ([]storage.BatchURLResponse, string, int) {
+//	currInd, indErr := strg.storage.GetNextIndex()
+//	if indErr != nil {
+//		return make([]storage.BatchURLResponse, 0), "Bad next index", http.StatusInternalServerError
+//	}
+//	var resultURLs []storage.BatchURLResponse
+//	var insertURLs []string
+//	for index, URLrequest := range batchURLs {
+//		shortURL := storage.CreateShortURL(currInd + uint(index))
+//		insertURLs = append(insertURLs, URLrequest.OriginalURL)
+//		resultURL := storage.BatchURLResponse{CorrelationID: URLrequest.CorrelationID, ShortURL: strg.baseURL + shortURL}
+//		resultURLs = append(resultURLs, resultURL)
+//	}
+//	err := strg.storage.InsertBatchValues(insertURLs, currInd, userID)
+//	if err != nil {
+//		return make([]storage.BatchURLResponse, 0), "Error while inserting into storage", http.StatusInternalServerError
+//	}
+//	return resultURLs, "", 0
+//}
 
 // GetURLByIDHandler returns full URL by its ID if it exists
 func (strg *HandlerWithStorage) GetURLByIDHandler(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
-	id := ConvertShortURLToID(shortURL)
-	url, errCode := strg.storage.GetValueByKeyAndUserID(id, r.Context().Value(UserIDCtxName).(uint))
-	if errCode != 0 {
-		http.Error(w, "Couldn't find url for id "+shortURL, errCode)
+	originalURL, errorCode := CommonServer{}.GetURLByID(strg.storage, shortURL, r.Context().Value(types.UserIDCtxName).(uint))
+	if errorCode != 0 {
+		http.Error(w, "Couldn't find url for id "+shortURL, errorCode)
 		return
 	}
-	w.Header().Set("Location", url)
+	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 	var empty []byte
 	w.Write(empty)
@@ -171,7 +106,7 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 		http.Error(w, "Got bad body content", http.StatusBadRequest)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(string(url), r.Context().Value(UserIDCtxName).(uint))
+	shortURL, errorMessage, errorCode := CommonServer{}.CreateShortURL(strg.storage, string(url), r.Context().Value(types.UserIDCtxName).(uint), strg.baseURL)
 	if errorCode != 0 && errorCode != http.StatusConflict {
 		http.Error(w, errorMessage, errorCode)
 		return
@@ -181,7 +116,7 @@ func (strg *HandlerWithStorage) CreateShortURLHandler(w http.ResponseWriter, r *
 	} else {
 		w.WriteHeader(http.StatusCreated)
 	}
-	_, errWrite := w.Write([]byte(strg.baseURL + shortURL))
+	_, errWrite := w.Write([]byte(shortURL))
 	if errWrite != nil {
 		http.Error(w, "Bad code", http.StatusInternalServerError)
 	}
@@ -195,7 +130,7 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var requestURL URLBodyRequest
+	var requestURL types.URLBodyRequest
 	err = json.Unmarshal(jsonBody, &requestURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -205,12 +140,12 @@ func (strg *HandlerWithStorage) CreateShortenURLFromBodyHandler(w http.ResponseW
 		http.Error(w, "Got empty url in Body", http.StatusUnprocessableEntity)
 		return
 	}
-	shortURL, errorMessage, errorCode := strg.CreateShortURLByURL(requestURL.URL, r.Context().Value(UserIDCtxName).(uint))
+	shortURL, errorMessage, errorCode := strg.storage.CreateShortURLByURL(requestURL.URL, r.Context().Value(types.UserIDCtxName).(uint))
 	if errorCode != 0 && errorCode != http.StatusConflict {
 		http.Error(w, errorMessage, errorCode)
 		return
 	}
-	resultResponse := ShortenURLResponse{strg.baseURL + shortURL}
+	resultResponse := types.ShortenURLResponse{URL: strg.baseURL + shortURL}
 	w.Header().Set("Content-Type", "application/json")
 	if errorCode == http.StatusConflict {
 		w.WriteHeader(http.StatusConflict)
@@ -237,14 +172,13 @@ func (strg *HandlerWithStorage) CreateShortenURLBatchHandler(w http.ResponseWrit
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var batchURLs []BatchURLRequest
+	var batchURLs []storage.BatchURLRequest
 	err = json.Unmarshal(jsonBody, &batchURLs)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	resultURLs, errorMessage, errorCode := strg.CreateShortURLBatch(batchURLs, r.Context().Value(UserIDCtxName).(uint))
-
+	resultURLs, errorMessage, errorCode := CommonServer{}.CreateShortenURLBatch(strg.storage, batchURLs, r.Context().Value(types.UserIDCtxName).(uint), strg.baseURL)
 	if errorCode != 0 {
 		http.Error(w, errorMessage, errorCode)
 		return
@@ -265,10 +199,10 @@ func (strg *HandlerWithStorage) CreateShortenURLBatchHandler(w http.ResponseWrit
 
 // GetAllURLsHandler return all URLs for given User
 func (strg *HandlerWithStorage) GetAllURLsHandler(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(UserIDCtxName).(uint)
-	responseList, errCode := strg.storage.GetAllURLsByUserID(userID, strg.baseURL)
-	if errCode != http.StatusOK {
-		w.WriteHeader(errCode)
+	userID := r.Context().Value(types.UserIDCtxName).(uint)
+	responseList, errorCode := CommonServer{}.GetAllURLs(strg.storage, userID, strg.baseURL)
+	if errorCode != http.StatusOK {
+		w.WriteHeader(errorCode)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -285,21 +219,9 @@ func (strg *HandlerWithStorage) GetAllURLsHandler(w http.ResponseWriter, r *http
 	}
 }
 
-// PingHandler checks than connection to storage is alive
-func (strg *HandlerWithStorage) PingHandler(w http.ResponseWriter, r *http.Request) {
-	err := strg.storage.Ping()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	var empty []byte
-	w.Write(empty)
-}
-
 // DeleteURLsHandler removes all URLs for given User
 func (strg *HandlerWithStorage) DeleteURLsHandler(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(UserIDCtxName).(uint)
+	userID := r.Context().Value(types.UserIDCtxName).(uint)
 	defer r.Body.Close()
 	jsonBody, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -313,10 +235,56 @@ func (strg *HandlerWithStorage) DeleteURLsHandler(w http.ResponseWriter, r *http
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	go func() {
-		strg.deleteChannel <- RequestToDelete{URLs: URLsToDelete, UserID: userID}
-	}()
+	CommonServer{}.DeleteURLs(strg.deleteChannel, URLsToDelete, userID)
 	w.WriteHeader(http.StatusAccepted)
 	var empty []byte
 	w.Write(empty)
+}
+
+// PingHandler checks than connection to storage is alive
+func (strg *HandlerWithStorage) PingHandler(w http.ResponseWriter, r *http.Request) {
+	err := CommonServer{}.Ping(strg.storage)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	var empty []byte
+	w.Write(empty)
+}
+
+// GetStatsHandler return all URLs and Users number
+func (strg *HandlerWithStorage) GetStatsHandler(w http.ResponseWriter, r *http.Request) {
+	ipStr := r.Header.Get("X-Real-IP")
+	requestIP := net.ParseIP(ipStr)
+	if requestIP == nil {
+		http.Error(w, "Got bad IP address", http.StatusForbidden)
+		return
+	}
+	_, ipNet, err := net.ParseCIDR(varprs.TrustedSubnet)
+	if err != nil {
+		http.Error(w, "Couldn't parse ipMask", http.StatusInternalServerError)
+		return
+	}
+	if !ipNet.Contains(requestIP) {
+		http.Error(w, "Got bad IP address", http.StatusForbidden)
+		return
+	}
+	stats, errCode := CommonServer{}.GetStats(strg.storage)
+	if errCode != http.StatusOK {
+		w.WriteHeader(errCode)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if statsMarshalled, err := json.Marshal(stats); err == nil {
+		_, err = w.Write(statsMarshalled)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

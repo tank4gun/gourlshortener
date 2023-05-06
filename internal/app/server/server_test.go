@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tank4gun/gourlshortener/internal/app/handlers"
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/types"
 )
 
 func TestCreateServer(t *testing.T) {
@@ -21,7 +21,7 @@ func TestCreateServer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			createdServer := CreateServer(&tt.startStorage, make(chan handlers.RequestToDelete, 10))
+			createdServer := CreateServer(&tt.startStorage, make(chan types.RequestToDelete, 10))
 			assert.NotNil(t, createdServer)
 		})
 	}

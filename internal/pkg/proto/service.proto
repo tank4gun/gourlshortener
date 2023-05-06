@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package service;
+
+option go_package = "pkg/proto";
+
+import "google/protobuf/empty.proto";
+
+message RequestToDelete {
+  repeated string urls = 1;
+  int32 user_id = 2;
+}
+
+message UrlToShortenRequest {
+  string url = 1;
+}
+
+message UrlByIdRequest {
+  string short_url = 1;
+}
+
+message UrlByIdResponse {
+  string original_url = 1;
+}
+
+message ShortenUrlResponse {
+  string short_url = 1;
+}
+
+message CorrelationUrlRequest {
+  string correlation_id = 1;
+  string original_url = 2;
+}
+
+message CorrelationUrlResponse {
+  string correlation_id = 1;
+  string short_url = 2;
+}
+
+message BatchUrlRequest {
+  repeated CorrelationUrlRequest request = 1;
+}
+
+message BatchUrlResponse {
+  repeated CorrelationUrlResponse response = 1;
+}
+
+message FullInfoUrlBatchResponse {
+  message FullInfoUrl {
+    string short_url = 1;
+    string original_url = 2;
+  }
+  repeated FullInfoUrl response = 1;
+}
+
+message DeleteUrlsRequest {
+  repeated UrlByIdRequest urls_to_delete = 1;
+}
+
+message StatsResponse {
+  int32 urls = 1;
+  int32 users = 2;
+}
+
+service Shortender{
+  rpc CreateShortURL(UrlToShortenRequest) returns (ShortenUrlResponse);
+  rpc GetURLByID(UrlByIdRequest) returns (UrlByIdResponse);
+  rpc CreateShortenURLBatch(BatchUrlRequest) returns (BatchUrlResponse);
+  rpc GetAllURLs(google.protobuf.Empty) returns (FullInfoUrlBatchResponse);
+  rpc DeleteURLs(DeleteUrlsRequest) returns (google.protobuf.Empty);
+  rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc GetStats(google.protobuf.Empty) returns (StatsResponse);
+}

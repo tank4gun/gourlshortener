@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/tank4gun/gourlshortener/internal/app/storage"
+	"github.com/tank4gun/gourlshortener/internal/app/types"
 )
 
 func ExampleHandlerWithStorage_CreateShortenURLFromBodyHandler() {
@@ -16,12 +17,12 @@ func ExampleHandlerWithStorage_CreateShortenURLFromBodyHandler() {
 		http.MethodPost, "/api/shorten", bytes.NewReader([]byte(`{"url": "http://ya.ru"}`)),
 	)
 	w := httptest.NewRecorder()
-	ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+	ctx := context.WithValue(request.Context(), types.UserIDCtxName, uint(1))
 	request = request.WithContext(ctx)
 	handler := http.HandlerFunc(NewHandlerWithStorage(&storage.Storage{
 		InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{},
 		NextIndex: 1, Encoder: nil, Decoder: nil,
-	}, make(chan RequestToDelete, 10)).CreateShortenURLFromBodyHandler)
+	}, make(chan types.RequestToDelete, 10)).CreateShortenURLFromBodyHandler)
 	handler.ServeHTTP(w, request)
 	result := w.Result()
 	fmt.Println(result.StatusCode)
@@ -39,11 +40,11 @@ func ExampleHandlerWithStorage_CreateShortenURLFromBodyHandler() {
 func ExampleHandlerWithStorage_CreateShortURLHandler() {
 	request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte("http://ya.ru")))
 	w := httptest.NewRecorder()
-	ctx := context.WithValue(request.Context(), UserIDCtxName, uint(1))
+	ctx := context.WithValue(request.Context(), types.UserIDCtxName, uint(1))
 	request = request.WithContext(ctx)
 	handler := http.HandlerFunc(NewHandlerWithStorage(&storage.Storage{
 		InternalStorage: map[uint]storage.URL{}, UserIDToURLID: map[uint][]uint{}, NextIndex: 1, Encoder: nil, Decoder: nil,
-	}, make(chan RequestToDelete, 10)).CreateShortURLHandler)
+	}, make(chan types.RequestToDelete, 10)).CreateShortURLHandler)
 	handler.ServeHTTP(w, request)
 	result := w.Result()
 	fmt.Println(result.StatusCode)

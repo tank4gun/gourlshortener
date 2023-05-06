@@ -17,7 +17,7 @@ func TestStorage_GetValueByKeyAndUserID(t *testing.T) {
 		{
 			"one_value",
 			Storage{
-				InternalStorage: map[uint]URL{1: URL{"aaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: {"aaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			1,
 			"aaa",
@@ -25,7 +25,7 @@ func TestStorage_GetValueByKeyAndUserID(t *testing.T) {
 		{
 			"two_values",
 			Storage{
-				InternalStorage: map[uint]URL{1: URL{"aaa", false}, 2: URL{"bbb", false}}, UserIDToURLID: map[uint][]uint{1: {2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: {"aaa", false}, 2: {"bbb", false}}, UserIDToURLID: map[uint][]uint{1: {2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
 			},
 			2,
 			"bbb",
@@ -54,17 +54,17 @@ func TestStorage_InsertValue(t *testing.T) {
 			},
 			"aaa",
 			Storage{
-				InternalStorage: map[uint]URL{1: URL{"aaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: {"aaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 		},
 		{
 			"one_value",
 			Storage{
-				InternalStorage: map[uint]URL{1: URL{"aaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: {"aaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			"bbb",
 			Storage{
-				InternalStorage: map[uint]URL{1: URL{"aaa", false}, 2: URL{"bbb", false}}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: {"aaa", false}, 2: {"bbb", false}}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
 			},
 		},
 	}
@@ -93,7 +93,7 @@ func TestStorage_InsertBatchValues(t *testing.T) {
 			[]string{"aaaa"},
 			Storage{
 				InternalStorage: map[uint]URL{
-					1: URL{"aaaa", false},
+					1: {"aaaa", false},
 				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			nil,
@@ -102,15 +102,15 @@ func TestStorage_InsertBatchValues(t *testing.T) {
 			"not_empty_storage",
 			Storage{
 				InternalStorage: map[uint]URL{
-					1: URL{"aaaa", false},
+					1: {"aaaa", false},
 				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			[]string{"bbbb", "cccc"},
 			Storage{
 				InternalStorage: map[uint]URL{
-					1: URL{"aaaa", false},
-					2: URL{"bbbb", false},
-					3: URL{"cccc", false},
+					1: {"aaaa", false},
+					2: {"bbbb", false},
+					3: {"cccc", false},
 				}, UserIDToURLID: map[uint][]uint{1: {1, 2, 3}}, NextIndex: 4, Encoder: nil, Decoder: nil,
 			},
 			nil,
@@ -118,14 +118,14 @@ func TestStorage_InsertBatchValues(t *testing.T) {
 		{
 			"already_used_index",
 			Storage{
-				InternalStorage: map[uint]URL{1: URL{"aaaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 1, Encoder: nil, Decoder: nil,
+				InternalStorage: map[uint]URL{1: {"aaaa", false}}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 1, Encoder: nil, Decoder: nil,
 			},
 			[]string{"bbbb", "cccc"},
 			Storage{
 				InternalStorage: map[uint]URL{
-					1: URL{"aaaa", false},
-					2: URL{"bbbb", false},
-					3: URL{"cccc", false},
+					1: {"aaaa", false},
+					2: {"bbbb", false},
+					3: {"cccc", false},
 				}, UserIDToURLID: map[uint][]uint{1: {1, 2, 3}}, NextIndex: 4, Encoder: nil, Decoder: nil,
 			},
 			&ExistError{},
@@ -161,7 +161,7 @@ func TestStorage_GetNextIndex(t *testing.T) {
 			"10th_next_index",
 			Storage{
 				InternalStorage: map[uint]URL{
-					1: URL{"a", false}, 2: URL{"b", false}, 3: URL{"c", false}, 4: URL{"aa", false}, 5: URL{"r", false}, 6: URL{"1", false}, 7: URL{"qwe", false}, 8: URL{"d", false}, 9: URL{"tt", false},
+					1: {"a", false}, 2: {"b", false}, 3: {"c", false}, 4: {"aa", false}, 5: {"r", false}, 6: {"1", false}, 7: {"qwe", false}, 8: {"d", false}, 9: {"tt", false},
 				},
 				UserIDToURLID: make(map[uint][]uint),
 				NextIndex:     10, Encoder: nil, Decoder: nil,
@@ -225,7 +225,7 @@ func TestStorage_GetAllURLsByUserID(t *testing.T) {
 			"one_url",
 			Storage{
 				InternalStorage: map[uint]URL{
-					1: URL{"aaaa", false},
+					1: {"aaaa", false},
 				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			1,
@@ -237,8 +237,8 @@ func TestStorage_GetAllURLsByUserID(t *testing.T) {
 			"two_urls",
 			Storage{
 				InternalStorage: map[uint]URL{
-					1: URL{"aaaa", false},
-					2: URL{"bbbb", false},
+					1: {"aaaa", false},
+					2: {"bbbb", false},
 				}, UserIDToURLID: map[uint][]uint{1: {1, 2}}, NextIndex: 3, Encoder: nil, Decoder: nil,
 			},
 			1,
@@ -250,7 +250,7 @@ func TestStorage_GetAllURLsByUserID(t *testing.T) {
 			"no_user",
 			Storage{
 				InternalStorage: map[uint]URL{
-					1: URL{"aaaa", false},
+					1: {"aaaa", false},
 				}, UserIDToURLID: map[uint][]uint{1: {1}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			2,
@@ -262,8 +262,8 @@ func TestStorage_GetAllURLsByUserID(t *testing.T) {
 			"no_url_for_user",
 			Storage{
 				InternalStorage: map[uint]URL{
-					1: URL{"aaaa", false},
-					2: URL{"bbbb", false},
+					1: {"aaaa", false},
+					2: {"bbbb", false},
 				}, UserIDToURLID: map[uint][]uint{1: {3}}, NextIndex: 2, Encoder: nil, Decoder: nil,
 			},
 			1,
